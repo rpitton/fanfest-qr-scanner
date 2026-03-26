@@ -606,19 +606,34 @@ let processing = false;
 let lastQR = '';
 
 async function handleQR(qrRaw) {
-  // Prevent double-fire on same QR
   const qrParsed = parseQR(qrRaw);
-  if (processing) return false;
-  if (qrParsed === lastQR) return false;
+
+  // Debug: show state on screen
+  $('camStatusText').textContent = '▶ handleQR: ' + qrParsed.substring(0,20) + ' proc=' + processing + ' last=' + lastQR.substring(0,10);
+
+  if (processing) {
+    $('camStatusText').textContent = '⏳ En proceso, espera…';
+    return false;
+  }
+  if (qrParsed === lastQR) {
+    $('camStatusText').textContent = '🔁 Mismo QR, ignorado';
+    return false;
+  }
 
   const username = getUsername();
-  if (!username) { showErr('err-user', true); $('configPanel').classList.add('show'); return false; }
+  if (!username) {
+    $('camStatusText').textContent = '⚠ Sin username';
+    showErr('err-user', true);
+    $('configPanel').classList.add('show');
+    return false;
+  }
   showErr('err-user', false);
 
   // ── Immediate feedback ──
   flashScanFeedback();
   lastQR = qrParsed;
   processing = true;
+  $('camStatusText').textContent = '🔄 Consultando servidor…';
   showResult('resultLoading');
 
   try {
@@ -739,7 +754,11 @@ function scanFrame() {
   c.getContext('2d').drawImage(v,0,0);
   const d=c.getContext('2d').getImageData(0,0,c.width,c.height);
   const code=jsQR(d.data,c.width,c.height,{inversionAttempts:'dontInvert'});
-  if(code) handleQR(code.data).then(ok=>{if(ok)stopCam();});
+  if(code) {
+    // Show raw QR data immediately on screen
+    $('camStatusText').textContent = '📍 Detectado: ' + code.data.substring(0,30);
+    handleQR(code.data).then(ok=>{if(ok)stopCam();});
+  }
 }
 function stopCam() {
   clearInterval(scanLoop); scanLoop=null;
