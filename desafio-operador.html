@@ -200,7 +200,8 @@ canvas#camCanvas{display:none}
       <div class="cfg-label">Tiros por participación</div>
       <div class="cfg-shots" id="shotsOpts">
         <div class="shot-opt" onclick="setShotsConfig(1)">1</div>
-        <div class="shot-opt active" onclick="setShotsConfig(3)">3</div>
+        <div class="shot-opt active" onclick="setShotsConfig(2)">2</div>
+        <div class="shot-opt" onclick="setShotsConfig(3)">3</div>
         <div class="shot-opt" onclick="setShotsConfig(5)">5</div>
         <div class="shot-opt" onclick="setShotsConfig(10)">10</div>
       </div>
@@ -354,7 +355,7 @@ const showErr = (id,v) => $(id).classList.toggle('show',v);
 
 // ── CONFIG STATE ──
 let cfg = {
-  shots: 3,
+  shots: 2,
   zones: { tl:100, tc:50, tr:100, ml:50, bc:50, mr:50, bl:25, br:25, miss:0 }
 };
 
