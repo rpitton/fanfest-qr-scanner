@@ -239,6 +239,7 @@ canvas#camCanvas{display:none}
     <div class="header-right">
       <div class="pill">Fan Fest</div>
       <div class="icon-btn" id="configBtn" onclick="toggleConfig()" title="Configuración">⚙️</div>
+      <div class="icon-btn" onclick="var p=document.getElementById('debugPanel');p.style.display=p.style.display==='none'?'block':'none'" title="Debug">🔍</div>
     </div>
   </header>
 
@@ -407,6 +408,17 @@ canvas#camCanvas{display:none}
     </div>
     <div class="log-list-wrap" id="logListWrap">
       <div id="logList"></div>
+    </div>
+  </div>
+
+  <!-- DEBUG PANEL -->
+  <div id="debugPanel" style="display:none;margin-top:14px">
+    <div style="background:#0a1a10;border:1px solid rgba(0,200,150,.2);border-radius:14px;padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#00C896">🔍 Debug Log</span>
+        <button onclick="document.getElementById('debugPanel').style.display='none';document.getElementById('debugLog').innerHTML=''" style="font-size:11px;background:transparent;border:1px solid rgba(255,77,106,.3);color:#FF4D6A;padding:3px 10px;border-radius:7px;cursor:pointer;font-family:inherit">Limpiar</button>
+      </div>
+      <div id="debugLog" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(232,245,242,0.6);line-height:1.8;max-height:200px;overflow-y:auto"></div>
     </div>
   </div>
 
