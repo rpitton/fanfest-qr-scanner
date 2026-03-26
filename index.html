@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airtm Fan Fest — Apps</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#00C896;--pink:#FF2D87;--bg:#090E0C;--surface:#101815;--border:rgba(0,200,150,0.12);--text:#E8F5F2;--muted:rgba(232,245,242,0.42)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,200,150,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,.03) 1px,transparent 1px);background-size:56px 56px;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:420px;width:100%;text-align:center}
+.logo{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+.logo-mark{width:36px;height:36px;background:var(--green);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#090E0C}
+.logo-text{font-size:22px;font-weight:700}
+.logo-text em{font-style:normal;color:var(--green)}
+.tagline{font-size:12px;color:var(--muted);margin-bottom:40px;font-weight:300}
+.tagline strong{color:var(--pink)}
+.cards{display:flex;flex-direction:column;gap:12px}
+.app-card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:20px 22px;text-decoration:none;text-align:left;transition:all .2s;position:relative;overflow:hidden}
+.app-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s}
+.app-card:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.app-card.green-card{border-color:rgba(0,200,150,.2)}
+.app-card.green-card::before{background:linear-gradient(135deg,rgba(0,200,150,.06),transparent)}
+.app-card.green-card:hover{border-color:rgba(0,200,150,.4)}
+.app-card.green-card:hover::before{opacity:1}
+.app-card.pink-card{border-color:rgba(255,45,135,.2)}
+.app-card.pink-card::before{background:linear-gradient(135deg,rgba(255,45,135,.06),transparent)}
+.app-card.pink-card:hover{border-color:rgba(255,45,135,.4)}
+.app-card.pink-card:hover::before{opacity:1}
+.app-card.gold-card{border-color:rgba(255,215,0,.15)}
+.app-card.gold-card::before{background:linear-gradient(135deg,rgba(255,215,0,.05),transparent)}
+.app-card.gold-card:hover{border-color:rgba(255,215,0,.3)}
+.app-card.gold-card:hover::before{opacity:1}
+.card-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.card-icon{font-size:28px;line-height:1}
+.card-title{font-size:16px;font-weight:700;color:var(--text)}
+.card-badge{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:3px 9px;border-radius:100px;margin-top:3px;display:inline-block}
+.green-card .card-badge{background:rgba(0,200,150,.15);color:var(--green);border:1px solid rgba(0,200,150,.2)}
+.pink-card .card-badge{background:rgba(255,45,135,.12);color:var(--pink);border:1px solid rgba(255,45,135,.2)}
+.gold-card .card-badge{background:rgba(255,215,0,.1);color:#FFD700;border:1px solid rgba(255,215,0,.2)}
+.card-desc{font-size:12px;color:var(--muted);line-height:1.6}
+.arrow{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--muted);transition:all .2s}
+.app-card:hover .arrow{color:var(--text);transform:translateY(-50%) translateX(3px)}
+.footer{margin-top:32px;font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-mark">✦</div>
+    <div class="logo-text"><em>Air</em>tm</div>
+  </div>
+  <p class="tagline">Fan Fest · <strong>La Verde</strong></p>
+
+  <div class="cards">
+
+    <a href="airtm-qr-scanner.html" class="app-card green-card">
+      <div class="card-top">
+        <div class="card-icon">🎟️</div>
+        <div>
+          <div class="card-title">Control de Acceso</div>
+          <span class="card-badge">Operador</span>
+        </div>
+      </div>
+      <div class="card-desc">Escanea QR, verifica confirmados y registra el ingreso al evento.</div>
+      <span class="arrow">→</span>
+    </a>
+
+    <a href="desafio-operador.html" class="app-card pink-card">
+      <div class="card-top">
+        <div class="card-icon">⚽</div>
+        <div>
+          <div class="card-title">Desafío La Verde</div>
+          <span class="card-badge">Operador</span>
+        </div>
+      </div>
+      <div class="card-desc">Registra los tiros de cada participante y guarda su puntaje en el ranking.</div>
+      <span class="arrow">→</span>
+    </a>
+
+    <a href="desafio-leaderboard.html" class="app-card gold-card">
+      <div class="card-top">
+        <div class="card-icon">🏆</div>
+        <div>
+          <div class="card-title">Leaderboard</div>
+          <span class="card-badge">Pantalla pública</span>
+        </div>
+      </div>
+      <div class="card-desc">Top 10 en tiempo real. Busca tu posición por nombre o email.</div>
+      <span class="arrow">→</span>
+    </a>
+
+  </div>
+
+  <div class="footer">Airtm Fan Fest 2026</div>
+</div>
+</body>
+</html>
