@@ -152,6 +152,19 @@ canvas#camCanvas{display:none}
 .err{display:none;font-size:11px;color:var(--danger);margin-top:7px;padding:8px 11px;background:rgba(255,77,106,.07);border-radius:9px;border:1px solid rgba(255,77,106,.18)}
 .err.show{display:block}
 
+/* MANUAL ENTRY */
+.manual-panel{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);animation:fadeUp .3s ease}
+.manual-panel.show{display:block}
+.manual-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.manual-title span{font-size:16px}
+.search-results-list{margin-top:8px;max-height:200px;overflow-y:auto}
+.search-result-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:6px;cursor:pointer;transition:all .2s;display:flex;justify-content:space-between;align-items:center}
+.search-result-item:hover{border-color:var(--green);background:var(--green-glow)}
+.sri-name{font-size:13px;font-weight:600;color:var(--text)}
+.sri-email{font-size:10px;color:var(--muted)}
+.sri-select{font-size:10px;color:var(--green);font-weight:600}
+.no-qr-badge{display:inline-block;font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:100px;background:rgba(255,171,64,.15);color:var(--warning);border:1px solid rgba(255,171,64,.25);margin-left:6px}
+
 /* Spinner */
 .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 8px}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -245,6 +258,30 @@ canvas#camCanvas{display:none}
     </div>
   </div>
 
+  <!-- MANUAL ENTRY BUTTON -->
+  <div style="text-align:center;margin-bottom:12px">
+    <button class="btn btn-ghost" style="width:auto;padding:10px 20px;font-size:12px;border-radius:10px;color:var(--warning);border-color:rgba(255,171,64,.3)" onclick="toggleManualEntry()">
+      ✋ Participar sin QR
+    </button>
+  </div>
+
+  <!-- MANUAL ENTRY PANEL -->
+  <div class="card manual-panel" id="manualPanel">
+    <div class="manual-title"><span>✋</span> Participar sin QR</div>
+    <div class="cfg-row">
+      <div class="cfg-label">Buscar por nombre o email</div>
+      <input type="text" id="manualSearch" placeholder="Ej. Ricardo o ricki@..." oninput="onManualSearch(this.value)" autocomplete="off" autocapitalize="off">
+    </div>
+    <div class="search-results-list" id="manualResults"></div>
+    <div style="margin-top:10px">
+      <div class="cfg-label" style="margin-bottom:6px">O ingresar nombre libre</div>
+      <input type="text" id="manualName" placeholder="Nombre del participante" autocomplete="off">
+      <button class="btn btn-warning btn-sm" style="margin-top:8px;width:100%" onclick="startManualPlayer()">
+        ▶ Iniciar con este nombre
+      </button>
+    </div>
+  </div>
+
   <!-- LOADING -->
   <div class="loading-card" id="loadingCard">
     <div class="spinner"></div>
@@ -292,9 +329,10 @@ canvas#camCanvas{display:none}
       <button class="btn miss-btn" onclick="registerZone('miss')" id="btn-miss" style="margin-top:8px">❌ Falló / Atajó el portero</button>
 
       <!-- Undo last -->
-      <div style="display:flex;gap:8px;margin-top:10px">
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="undoShot()">↩ Deshacer último</button>
         <button class="btn btn-ghost btn-sm" onclick="resetGame()">🔄 Reiniciar</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--warning);border-color:rgba(255,171,64,.3);flex:1" onclick="newPlayer()">👤 Siguiente participante</button>
       </div>
     </div>
   </div>
@@ -313,7 +351,7 @@ canvas#camCanvas{display:none}
 </div><!-- /wrap -->
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9CIOcWZi3Oscci-fV3GA_San_WFyPL_N6-nSQyq6ULsXTa7nPfsKIQCNMNKV4LiUJ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0ehltSUuT8EYvL-E57wBIlTjbsrszxEe2IgFfOU7P9QJW3kHvP99PDc1bQAe-D3L6/exec';
 
 const $ = id => document.getElementById(id);
 const showErr = (id,v) => $(id).classList.toggle('show',v);
@@ -426,27 +464,102 @@ $('fileInput').addEventListener('change', function() {
   reader.readAsDataURL(file);
 });
 
+// ── MANUAL ENTRY ──
+let manualSearchTimer = null;
+
+function toggleManualEntry() {
+  const panel = $('manualPanel');
+  panel.classList.toggle('show');
+  if (panel.classList.contains('show')) {
+    setTimeout(() => $('manualSearch').focus(), 100);
+  }
+}
+
+function onManualSearch(val) {
+  clearTimeout(manualSearchTimer);
+  const q = val.trim();
+  $('manualResults').innerHTML = '';
+  if (q.length < 2) return;
+  manualSearchTimer = setTimeout(() => doManualSearch(q), 350);
+}
+
+async function doManualSearch(q) {
+  try {
+    const res = await apiCall({ action: 'search_attendee', query: q });
+    const results = res.results || [];
+    if (!results.length) {
+      $('manualResults').innerHTML = '<div style="font-size:11px;color:var(--muted);padding:8px 0">Sin resultados. Usa el nombre libre abajo.</div>';
+      return;
+    }
+    $('manualResults').innerHTML = results.map((r, i) =>
+      `<div class="search-result-item" onclick="selectManualPlayer('${escJs(r.qr)}','${escJs(r.name)}','${escJs(r.email)}')">
+        <div>
+          <div class="sri-name">${esc(r.name)}</div>
+          <div class="sri-email">${esc(r.email||'')}</div>
+        </div>
+        <span class="sri-select">Seleccionar →</span>
+      </div>`
+    ).join('');
+  } catch(e) {
+    $('manualResults').innerHTML = '<div style="font-size:11px;color:var(--danger);padding:8px 0">Error buscando: ' + e.message + '</div>';
+  }
+}
+
+function selectManualPlayer(qr, name, email) {
+  $('manualPanel').classList.remove('show');
+  loadPlayerData(qr, name, email, true);
+}
+
+function startManualPlayer() {
+  const name = $('manualName').value.trim();
+  if (!name) { alert('Ingresa el nombre del participante.'); return; }
+  $('manualPanel').classList.remove('show');
+  // Generate a pseudo-QR from name + timestamp for tracking
+  const pseudoQR = 'manual_' + name.toLowerCase().replace(/\s+/g,'_') + '_' + Date.now();
+  loadPlayerData(pseudoQR, name, '', true);
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escJs(s) { return String(s).replace(/'/g,"\'").replace(/"/g,'\"'); }
+
 // ── LOAD PLAYER ──
 async function loadPlayer(qr) {
+  await loadPlayerData(qr, null, null, false);
+}
+
+async function loadPlayerData(qr, overrideName, overrideEmail, isManual) {
   getZoneConfig();
   $('loadingCard').classList.add('show');
-  $('scanCard').style.display='none';
-  $('playerCard').style.display='none';
+  $('scanCard').style.display = isManual ? 'none' : 'none';
+  $('playerCard').style.display = 'none';
   $('resultCard').classList.remove('show');
 
   try {
-    const res = await apiCall({ action:'check_player', qr });
-    $('loadingCard').classList.remove('show');
+    let name = overrideName, email = overrideEmail || '', attempts = 0, bestScore = 0;
 
-    if (res.status !== 'ok') {
-      alert('QR no reconocido. Este participante no está en la lista de asistentes.');
-      resetToScan(); return;
+    if (!isManual || !overrideName) {
+      // Look up from Sheet
+      const res = await apiCall({ action:'check_player', qr });
+      $('loadingCard').classList.remove('show');
+      if (res.status !== 'ok') {
+        alert('QR no reconocido. Este participante no está en la lista de asistentes.');
+        resetToScan(); return;
+      }
+      name = overrideName || res.name;
+      email = overrideEmail || res.email || '';
+      attempts = res.attempts;
+      bestScore = res.bestScore;
+    } else {
+      // Manual entry — still check attempts from Sheet if qr starts with manual_
+      $('loadingCard').classList.remove('show');
     }
 
-    currentPlayer = { qr, name:res.name, email:res.email||'', attempts:res.attempts, bestScore:res.bestScore };
-    $('pcName').textContent = res.name;
-    $('pcStatus').textContent = res.attempts > 0 ? `${res.attempts} intento${res.attempts>1?'s':''}` : 'Primera vez';
-    $('pcAttempts').textContent = res.attempts > 0 ? `Mejor: ${res.bestScore} pts` : '';
+    currentPlayer = { qr, name, email, attempts, bestScore, isManual: !!isManual };
+
+    // Show no-QR badge if manual
+    $('pcName').innerHTML = esc(name) + (isManual ? '<span class="no-qr-badge">Sin QR</span>' : '');
+    $('pcStatus').textContent = attempts > 0 ? `${attempts} intento${attempts>1?'s':''}` : 'Primera vez';
+    $('pcAttempts').textContent = attempts > 0 ? `Mejor: ${bestScore} pts` : '';
     $('pcBest').textContent = '';
 
     shots = []; totalScore = 0;
