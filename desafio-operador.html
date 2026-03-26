@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Desafío Airtm — Operador</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<style>
+:root {
+  --green:#00C896; --green-dark:#00A87D; --green-glow:rgba(0,200,150,0.13);
+  --bg:#090E0C; --surface:#101815; --surface2:#172220;
+  --border:rgba(0,200,150,0.11); --text:#E8F5F2; --muted:rgba(232,245,242,0.42);
+  --danger:#FF4D6A; --warning:#FFAB40; --pink:#FF2D87;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,200,150,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,.03) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0}
+
+.wrap{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:0 16px 80px}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 0 6px}
+.logo{font-size:18px;font-weight:700;display:flex;align-items:center;gap:7px}
+.logo-mark{width:28px;height:28px;background:var(--green);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#090E0C}
+.logo em{font-style:normal;color:var(--green)}
+.header-right{display:flex;gap:7px;align-items:center}
+.pill{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--pink);border:1px solid rgba(255,45,135,.3);background:rgba(255,45,135,.08);padding:4px 10px;border-radius:100px}
+.icon-btn{width:34px;height:34px;border-radius:9px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:all .2s}
+.icon-btn:hover,.icon-btn.active{border-color:var(--green);background:var(--green-glow)}
+
+.event-title{font-size:20px;font-weight:800;letter-spacing:-.5px;margin-bottom:2px}
+.event-title em{font-style:normal;color:var(--pink)}
+.sub{font-size:11px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+
+/* CONFIG */
+.config-panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:12px;animation:fadeUp .3s ease}
+.config-panel.show{display:block}
+.cfg-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);margin-bottom:14px}
+.cfg-row{margin-bottom:12px}
+.cfg-label{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:.5px}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cfg-shots{display:flex;gap:6px}
+.shot-opt{flex:1;padding:9px;border-radius:10px;font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .2s;text-align:center}
+.shot-opt.active{background:var(--green-glow);border-color:var(--green);color:var(--text)}
+input[type="number"],input[type="text"]{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Sora',sans-serif;font-size:14px;outline:none;transition:border-color .2s;-webkit-appearance:none}
+input:focus{border-color:var(--green)}
+input::placeholder{color:var(--muted)}
+.zones-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.zone-cfg{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center}
+.zone-cfg-name{font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600}
+.zone-cfg input{text-align:center;padding:7px 6px;font-size:14px;font-weight:700}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:12px;transition:border-color .25s}
+.card-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.card-label::before{content:'';display:block;width:4px;height:4px;border-radius:50%;background:var(--green)}
+
+/* SCANNER */
+.mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.mode-tab{padding:10px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .2s;text-align:center}
+.mode-tab.active{background:var(--green-glow);border-color:rgba(0,200,150,.35);color:var(--text)}
+#livePanel{display:none}
+#livePanel.show{display:block}
+#uploadPanel{display:none}
+#uploadPanel.show{display:block}
+.cam-wrap{position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:1}
+#camVideo{width:100%;height:100%;object-fit:cover;display:block}
+canvas#camCanvas{display:none}
+.cam-overlay{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.cam-frame{width:54%;aspect-ratio:1;position:relative}
+.cam-frame::before,.cam-frame::after,.cam-frame span::before,.cam-frame span::after{content:'';position:absolute;width:20px;height:20px;border-color:var(--green);border-style:solid}
+.cam-frame::before{top:0;left:0;border-width:2.5px 0 0 2.5px;border-radius:3px 0 0 0}
+.cam-frame::after{top:0;right:0;border-width:2.5px 2.5px 0 0;border-radius:0 3px 0 0}
+.cam-frame span::before{bottom:0;left:0;border-width:0 0 2.5px 2.5px;border-radius:0 0 0 3px}
+.cam-frame span::after{bottom:0;right:0;border-width:0 2.5px 2.5px 0;border-radius:0 0 3px 0}
+.scan-line{position:absolute;left:4%;right:4%;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);box-shadow:0 0 8px var(--green);animation:scanMove 2.4s ease-in-out infinite;top:8%}
+@keyframes scanMove{0%,100%{top:8%;opacity:0}10%{opacity:1}90%{opacity:1}50%{top:88%}}
+.upload-zone{border:2px dashed rgba(0,200,150,.22);border-radius:14px;padding:28px 16px;text-align:center;cursor:pointer;background:var(--surface2);position:relative;overflow:hidden}
+.upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:0}
+.upload-icon{font-size:28px;margin-bottom:6px}
+.upload-title{font-size:13px;font-weight:600;margin-bottom:3px}
+.upload-hint{font-size:11px;color:var(--muted)}
+#previewWrap{display:none;margin-top:10px}
+#previewImg{width:100%;display:block;border-radius:10px;max-height:200px;object-fit:contain;background:#000}
+.status-row{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:11px;color:var(--muted)}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot.green{background:var(--green);animation:pulse 1.2s ease-in-out infinite}
+.dot.gray{background:var(--muted)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+/* BUTTONS */
+.btn{width:100%;padding:13px;border-radius:12px;font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.btn-primary{background:var(--green);color:#090E0C}
+.btn-primary:hover{background:var(--green-dark);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,200,150,.3)}
+.btn-danger{background:rgba(255,77,106,.1);color:var(--danger);border:1px solid rgba(255,77,106,.25)}
+.btn-pink{background:var(--pink);color:#fff}
+.btn-pink:hover{background:#e0006e;transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--green);color:var(--text)}
+.btn-sm{padding:9px 16px;width:auto;font-size:12px;border-radius:9px}
+
+/* PLAYER CARD */
+.player-card{background:var(--surface2);border:1px solid rgba(0,200,150,.2);border-radius:14px;padding:14px 16px;margin-bottom:12px;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.pc-name{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.3px;margin-bottom:4px}
+.pc-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pc-badge{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:3px 10px;border-radius:100px;background:var(--green);color:#090E0C}
+.pc-attempts{font-size:11px;color:var(--muted)}
+.pc-best{font-size:11px;color:var(--warning);font-weight:600}
+
+/* GOAL BOARD */
+.goal-board{display:none;margin-bottom:12px}
+.goal-board.show{display:block}
+.gb-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;text-align:center}
+
+/* The pitch */
+.pitch-wrap{position:relative;width:100%;border-radius:14px;overflow:hidden;background:#1a4a1a;border:2px solid rgba(0,200,150,.15)}
+.pitch-img{width:100%;display:block;object-fit:cover}
+.pitch-svg{position:absolute;inset:0;width:100%;height:100%}
+
+/* Shot counter */
+.shot-counter{display:flex;gap:8px;justify-content:center;margin:12px 0 8px}
+.shot-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:var(--surface2);transition:all .3s}
+.shot-dot.taken{background:var(--green);border-color:var(--green)}
+.shot-dot.missed{background:var(--danger);border-color:var(--danger)}
+
+/* Current score */
+.score-display{text-align:center;margin-bottom:10px}
+.score-num{font-size:48px;font-weight:800;color:var(--green);letter-spacing:-2px;line-height:1}
+.score-lbl{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase}
+
+/* Zone buttons */
+.zones-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+.zone-btn{padding:14px 8px;border-radius:12px;font-family:'Sora',sans-serif;font-size:20px;font-weight:800;cursor:pointer;border:2px solid transparent;background:var(--surface2);color:var(--pink);transition:all .15s;text-align:center;position:relative}
+.zone-btn:hover{transform:scale(1.04);border-color:var(--pink);background:rgba(255,45,135,.1)}
+.zone-btn:active{transform:scale(.97)}
+.zone-btn.disabled{opacity:.3;pointer-events:none}
+.zone-btn .zone-pts{font-size:9px;color:var(--muted);font-weight:600;display:block;margin-top:2px;letter-spacing:.5px}
+.miss-btn{margin-top:4px;background:rgba(255,77,106,.08);color:var(--danger);border:1px solid rgba(255,77,106,.2);font-size:12px}
+
+/* RESULT */
+.result-card{display:none;border-radius:18px;padding:22px;margin-bottom:12px;animation:fadeUp .4s ease;text-align:center}
+.result-card.show{display:block}
+.result-card.success{background:rgba(0,200,150,.07);border:1.5px solid rgba(0,200,150,.3)}
+.rc-score{font-size:64px;font-weight:800;color:var(--green);letter-spacing:-3px;line-height:1;margin-bottom:6px}
+.rc-name{font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px}
+.rc-rank{font-size:13px;color:var(--muted);margin-bottom:16px}
+.rc-rank strong{color:var(--warning);font-size:20px}
+
+/* ERR */
+.err{display:none;font-size:11px;color:var(--danger);margin-top:7px;padding:8px 11px;background:rgba(255,77,106,.07);border-radius:9px;border:1px solid rgba(255,77,106,.18)}
+.err.show{display:block}
+
+/* Spinner */
+.spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;margin-bottom:12px;display:none}
+.loading-card.show{display:block}
+.loading-txt{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">
+      <div class="logo-mark">✦</div>
+      <span><em>Air</em>tm</span>
+    </div>
+    <div class="header-right">
+      <div class="pill">Desafío</div>
+      <div class="icon-btn" id="configBtn" onclick="toggleConfig()">⚙️</div>
+    </div>
+  </header>
+
+  <div class="event-title">Desafío <em>La Verde</em></div>
+  <p class="sub">Airtm Fan Fest · Panel del operador</p>
+
+  <!-- CONFIG -->
+  <div class="config-panel" id="configPanel">
+    <div class="cfg-title">Configuración</div>
+
+    <div class="cfg-row">
+      <div class="cfg-label">Operador</div>
+      <input type="text" id="username" placeholder="@tu-username" autocomplete="off" autocapitalize="off">
+      <div class="err" id="err-user">⚠ Ingresa tu username.</div>
+    </div>
+
+    <div class="cfg-row">
+      <div class="cfg-label">Tiros por participación</div>
+      <div class="cfg-shots" id="shotsOpts">
+        <div class="shot-opt" onclick="setShotsConfig(1)">1</div>
+        <div class="shot-opt active" onclick="setShotsConfig(3)">3</div>
+        <div class="shot-opt" onclick="setShotsConfig(5)">5</div>
+        <div class="shot-opt" onclick="setShotsConfig(10)">10</div>
+      </div>
+    </div>
+
+    <div class="cfg-row">
+      <div class="cfg-label">Puntos por zona</div>
+      <div class="zones-grid">
+        <div class="zone-cfg"><div class="zone-cfg-name">↖ Arriba Izq</div><input type="number" id="z-tl" value="100" min="0"></div>
+        <div class="zone-cfg"><div class="zone-cfg-name">↑ Arriba</div><input type="number" id="z-tc" value="50" min="0"></div>
+        <div class="zone-cfg"><div class="zone-cfg-name">↗ Arriba Der</div><input type="number" id="z-tr" value="100" min="0"></div>
+        <div class="zone-cfg"><div class="zone-cfg-name">← Medio Izq</div><input type="number" id="z-ml" value="50" min="0"></div>
+        <div class="zone-cfg"><div class="zone-cfg-name">↓ Centro</div><input type="number" id="z-bc" value="50" min="0"></div>
+        <div class="zone-cfg"><div class="zone-cfg-name">→ Medio Der</div><input type="number" id="z-mr" value="50" min="0"></div>
+        <div class="zone-cfg"><div class="zone-cfg-name">↙ Bajo Izq</div><input type="number" id="z-bl" value="25" min="0"></div>
+        <div class="zone-cfg"><div class="zone-cfg-name">— Falla</div><input type="number" id="z-miss" value="0" min="0" readonly style="opacity:.4"></div>
+        <div class="zone-cfg"><div class="zone-cfg-name">↘ Bajo Der</div><input type="number" id="z-br" value="25" min="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCANNER CARD -->
+  <div class="card" id="scanCard">
+    <div class="card-label">Escanear QR del participante</div>
+    <div class="mode-tabs">
+      <div class="mode-tab active" id="tab-live" onclick="setMode('live')">🎥 Cámara en vivo</div>
+      <div class="mode-tab" id="tab-upload" onclick="setMode('upload')">📷 Foto</div>
+    </div>
+    <div id="livePanel" class="show">
+      <div class="cam-wrap">
+        <video id="camVideo" autoplay playsinline muted></video>
+        <canvas id="camCanvas"></canvas>
+        <div class="cam-overlay"><div class="cam-frame"><span></span><div class="scan-line"></div></div></div>
+      </div>
+      <div class="status-row"><div class="dot gray" id="camDot"></div><span id="camStatusText">Cámara inactiva</span></div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-primary" id="startBtn" onclick="startCam()">🎥 Iniciar</button>
+        <button class="btn btn-danger" id="stopBtn" onclick="stopCam()" style="display:none">⏹</button>
+      </div>
+      <div class="err" id="err-cam">⚠ No se pudo acceder a la cámara.</div>
+    </div>
+    <div id="uploadPanel">
+      <div class="upload-zone">
+        <input type="file" id="fileInput" accept="image/*" capture="environment">
+        <div class="upload-icon">📲</div>
+        <div class="upload-title">Toca para escanear</div>
+        <div class="upload-hint">Safari iPhone compatible</div>
+      </div>
+      <div id="previewWrap"><img id="previewImg" alt="preview"></div>
+      <div class="err" id="err-qr">❌ No se detectó QR.</div>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading-card" id="loadingCard">
+    <div class="spinner"></div>
+    <div class="loading-txt">Buscando participante…</div>
+  </div>
+
+  <!-- PLAYER INFO -->
+  <div id="playerCard" style="display:none">
+    <div class="player-card">
+      <div class="pc-name" id="pcName"></div>
+      <div class="pc-meta">
+        <span class="pc-badge" id="pcStatus"></span>
+        <span class="pc-attempts" id="pcAttempts"></span>
+        <span class="pc-best" id="pcBest"></span>
+      </div>
+    </div>
+
+    <!-- GOAL BOARD -->
+    <div class="goal-board show" id="goalBoard">
+      <div class="gb-title">Toca la zona donde entró la pelota</div>
+
+      <!-- Score & shot tracker -->
+      <div class="score-display">
+        <div class="score-num" id="scoreNum">0</div>
+        <div class="score-lbl">puntos acumulados</div>
+      </div>
+      <div class="shot-counter" id="shotCounter"></div>
+
+      <!-- Zone grid — mirrors the goal image layout -->
+      <div class="zones-row" id="topRow">
+        <button class="zone-btn" onclick="registerZone('tl')" id="btn-tl"><span id="pts-tl">100</span><span class="zone-pts">pts · arr izq</span></button>
+        <button class="zone-btn" onclick="registerZone('tc')" id="btn-tc"><span id="pts-tc">50</span><span class="zone-pts">pts · arriba</span></button>
+        <button class="zone-btn" onclick="registerZone('tr')" id="btn-tr"><span id="pts-tr">100</span><span class="zone-pts">pts · arr der</span></button>
+      </div>
+      <div class="zones-row" id="midRow">
+        <button class="zone-btn" onclick="registerZone('ml')" id="btn-ml"><span id="pts-ml">50</span><span class="zone-pts">pts · med izq</span></button>
+        <button class="zone-btn" onclick="registerZone('bc')" id="btn-bc"><span id="pts-bc">50</span><span class="zone-pts">pts · centro</span></button>
+        <button class="zone-btn" onclick="registerZone('mr')" id="btn-mr"><span id="pts-mr">50</span><span class="zone-pts">pts · med der</span></button>
+      </div>
+      <div class="zones-row" id="botRow">
+        <button class="zone-btn" onclick="registerZone('bl')" id="btn-bl"><span id="pts-bl">25</span><span class="zone-pts">pts · baj izq</span></button>
+        <button class="zone-btn" style="opacity:.35;pointer-events:none">🧤<span class="zone-pts">portero</span></button>
+        <button class="zone-btn" onclick="registerZone('br')" id="btn-br"><span id="pts-br">25</span><span class="zone-pts">pts · baj der</span></button>
+      </div>
+      <button class="btn miss-btn" onclick="registerZone('miss')" id="btn-miss" style="margin-top:8px">❌ Falló / Atajó el portero</button>
+
+      <!-- Undo last -->
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-ghost btn-sm" onclick="undoShot()">↩ Deshacer último</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetGame()">🔄 Reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-card success" id="resultCard">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);margin-bottom:8px">Resultado final</div>
+    <div class="rc-score" id="rcScore">0</div>
+    <div class="rc-name" id="rcName"></div>
+    <div class="rc-rank" id="rcRank"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:center">
+      <button class="btn btn-pink btn-sm" onclick="newPlayer()">Siguiente participante</button>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSBiCIJ1OSD0VawdFn2SlixcgQ8bP4RpnnDLFBEskjLCULV2Mnt8vxHiDtr7eifrvn/exec';
+
+const $ = id => document.getElementById(id);
+const showErr = (id,v) => $(id).classList.toggle('show',v);
+
+// ── CONFIG STATE ──
+let cfg = {
+  shots: 3,
+  zones: { tl:100, tc:50, tr:100, ml:50, bc:50, mr:50, bl:25, br:25, miss:0 }
+};
+
+function setShotsConfig(n) {
+  cfg.shots = n;
+  document.querySelectorAll('.shot-opt').forEach(el => {
+    el.classList.toggle('active', parseInt(el.textContent) === n);
+  });
+}
+
+function getZoneConfig() {
+  cfg.zones.tl   = parseInt($('z-tl').value)||0;
+  cfg.zones.tc   = parseInt($('z-tc').value)||0;
+  cfg.zones.tr   = parseInt($('z-tr').value)||0;
+  cfg.zones.ml   = parseInt($('z-ml').value)||0;
+  cfg.zones.bc   = parseInt($('z-bc').value)||0;
+  cfg.zones.mr   = parseInt($('z-mr').value)||0;
+  cfg.zones.bl   = parseInt($('z-bl').value)||0;
+  cfg.zones.br   = parseInt($('z-br').value)||0;
+  cfg.zones.miss = 0;
+  // update displayed pts on buttons
+  ['tl','tc','tr','ml','bc','mr','bl','br'].forEach(z => {
+    $('pts-'+z).textContent = cfg.zones[z];
+  });
+}
+
+function toggleConfig() {
+  $('configPanel').classList.toggle('show');
+  $('configBtn').classList.toggle('active');
+}
+
+// ── GAME STATE ──
+let currentPlayer = null;
+let shots = [];      // [{zone, pts}]
+let totalScore = 0;
+
+function getUsername() {
+  const u = $('username').value.trim();
+  return u ? (u.startsWith('@') ? u : '@'+u) : null;
+}
+
+// ── MODE / CAM ──
+let mode = 'live';
+function setMode(m) {
+  if (m===mode) return;
+  if (mode==='live') stopCam();
+  mode = m;
+  $('tab-live').classList.toggle('active', m==='live');
+  $('tab-upload').classList.toggle('active', m==='upload');
+  $('livePanel').classList.toggle('show', m==='live');
+  $('uploadPanel').classList.toggle('show', m==='upload');
+}
+
+let camStream=null, scanLoop=null, camBusy=false;
+async function startCam() {
+  if (!getUsername()) { showErr('err-user',true); $('configPanel').classList.add('show'); return; }
+  showErr('err-user',false); showErr('err-cam',false);
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:1280}}});
+    const v=$('camVideo'); v.srcObject=camStream; await v.play();
+    $('startBtn').style.display='none'; $('stopBtn').style.display='flex';
+    $('camDot').className='dot green'; $('camStatusText').textContent='Escaneando QR…';
+    scanLoop=setInterval(scanFrame,300);
+  } catch(e){ showErr('err-cam',true); }
+}
+function scanFrame() {
+  if(camBusy)return;
+  const v=$('camVideo'); if(v.readyState!==v.HAVE_ENOUGH_DATA)return;
+  const c=$('camCanvas'); c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  const d=c.getContext('2d').getImageData(0,0,c.width,c.height);
+  const code=jsQR(d.data,c.width,c.height,{inversionAttempts:'dontInvert'});
+  if(code){ camBusy=true; loadPlayer(code.data); }
+}
+function stopCam() {
+  clearInterval(scanLoop); scanLoop=null;
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  $('camVideo').srcObject=null;
+  $('startBtn').style.display='flex'; $('stopBtn').style.display='none';
+  $('camDot').className='dot gray'; $('camStatusText').textContent='Cámara inactiva';
+}
+
+$('fileInput').addEventListener('change', function() {
+  const file=this.files[0]; if(!file)return;
+  showErr('err-qr',false);
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      $('previewImg').src=e.target.result; $('previewWrap').style.display='block';
+      const canvas=document.createElement('canvas');
+      let w=img.width,h=img.height; const MAX=1200;
+      if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r);}
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const id=canvas.getContext('2d').getImageData(0,0,w,h);
+      const code=jsQR(id.data,w,h,{inversionAttempts:'dontInvert'});
+      if(code){showErr('err-qr',false);loadPlayer(code.data);$('fileInput').value='';}
+      else showErr('err-qr',true);
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+// ── LOAD PLAYER ──
+async function loadPlayer(qr) {
+  getZoneConfig();
+  $('loadingCard').classList.add('show');
+  $('scanCard').style.display='none';
+  $('playerCard').style.display='none';
+  $('resultCard').classList.remove('show');
+
+  try {
+    const res = await apiCall({ action:'check_player', qr });
+    $('loadingCard').classList.remove('show');
+
+    if (res.status !== 'ok') {
+      alert('QR no reconocido. Este participante no está en la lista de asistentes.');
+      resetToScan(); return;
+    }
+
+    currentPlayer = { qr, name:res.name, email:res.email||'', attempts:res.attempts, bestScore:res.bestScore };
+    $('pcName').textContent = res.name;
+    $('pcStatus').textContent = res.attempts > 0 ? `${res.attempts} intento${res.attempts>1?'s':''}` : 'Primera vez';
+    $('pcAttempts').textContent = res.attempts > 0 ? `Mejor: ${res.bestScore} pts` : '';
+    $('pcBest').textContent = '';
+
+    shots = []; totalScore = 0;
+    renderShotCounter();
+    $('scoreNum').textContent = '0';
+    enableZones();
+
+    $('playerCard').style.display = 'block';
+    stopCam();
+  } catch(e) {
+    $('loadingCard').classList.remove('show');
+    alert('Error de conexión: ' + e.message);
+    resetToScan();
+  }
+}
+
+// ── GAME LOGIC ──
+function renderShotCounter() {
+  const el = $('shotCounter');
+  el.innerHTML = '';
+  for (let i=0; i<cfg.shots; i++) {
+    const d = document.createElement('div');
+    d.className = 'shot-dot';
+    if (i < shots.length) d.classList.add(shots[i].zone === 'miss' ? 'missed' : 'taken');
+    el.appendChild(d);
+  }
+}
+
+function enableZones() {
+  document.querySelectorAll('.zone-btn').forEach(b => b.classList.remove('disabled'));
+  $('btn-miss').classList.remove('disabled');
+}
+
+function registerZone(zone) {
+  if (shots.length >= cfg.shots) return;
+  const pts = cfg.zones[zone] || 0;
+  shots.push({ zone, pts });
+  totalScore += pts;
+  $('scoreNum').textContent = totalScore;
+  renderShotCounter();
+
+  // Flash feedback
+  const btn = zone === 'miss' ? $('btn-miss') : $('btn-'+zone);
+  if (btn) {
+    btn.style.transform = 'scale(1.15)';
+    btn.style.background = zone==='miss' ? 'rgba(255,77,106,.25)' : 'rgba(255,45,135,.25)';
+    setTimeout(()=>{ btn.style.transform=''; btn.style.background=''; }, 200);
+  }
+
+  if (shots.length >= cfg.shots) finishGame();
+}
+
+function undoShot() {
+  if (!shots.length) return;
+  const last = shots.pop();
+  totalScore -= last.pts;
+  $('scoreNum').textContent = totalScore;
+  renderShotCounter();
+}
+
+function resetGame() {
+  shots = []; totalScore = 0;
+  $('scoreNum').textContent = '0';
+  renderShotCounter();
+  enableZones();
+}
+
+async function finishGame() {
+  const username = getUsername() || 'operador';
+  const shotsStr = shots.map(s => s.zone+'('+s.pts+')').join(',');
+  const timestamp = new Date().toISOString();
+
+  $('loadingCard').classList.add('show');
+  $('playerCard').style.display = 'none';
+
+  try {
+    const res = await apiCall({
+      action:'save_score',
+      qr: currentPlayer.qr,
+      username,
+      timestamp,
+      name: currentPlayer.name,
+      email: currentPlayer.email,
+      score: totalScore,
+      shots: shotsStr
+    });
+
+    $('loadingCard').classList.remove('show');
+    $('rcScore').textContent  = totalScore;
+    $('rcName').textContent   = currentPlayer.name;
+
+    const rank = res.rank || 1;
+    const medals = ['🥇','🥈','🥉'];
+    const medal = rank <= 3 ? medals[rank-1] : '🏅';
+    $('rcRank').innerHTML = `${medal} Posición <strong>#${rank}</strong> en el ranking`;
+
+    $('resultCard').classList.add('show');
+    $('resultCard').scrollIntoView({ behavior:'smooth', block:'center' });
+
+  } catch(e) {
+    $('loadingCard').classList.remove('show');
+    alert('Error al guardar: ' + e.message);
+    $('playerCard').style.display = 'block';
+  }
+}
+
+function newPlayer() {
+  $('resultCard').classList.remove('show');
+  currentPlayer = null; shots = []; totalScore = 0;
+  resetToScan();
+}
+
+function resetToScan() {
+  $('scanCard').style.display = 'block';
+  $('playerCard').style.display = 'none';
+  $('loadingCard').classList.remove('show');
+  camBusy = false;
+}
+
+// ── API ──
+async function apiCall(params) {
+  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+  const res = await fetch(url, { redirect:'follow' });
+  if (!res.ok) throw new Error('HTTP '+res.status);
+  return res.json();
+}
+</script>
+</body>
+</html>

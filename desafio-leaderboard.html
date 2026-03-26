@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboard — Desafío Airtm La Verde</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green:#00C896; --green-dark:#00A87D; --green-glow:rgba(0,200,150,0.12);
+  --bg:#060A08; --surface:#0E1512; --surface2:#162018;
+  --border:rgba(0,200,150,0.1); --text:#E8F5F2; --muted:rgba(232,245,242,0.38);
+  --pink:#FF2D87; --warning:#FFAB40; --gold:#FFD700; --silver:#C0C0C0; --bronze:#CD7F32;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{min-height:100vh}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* Animated bg */
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,200,150,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,.025) 1px,transparent 1px);
+  background-size:60px 60px;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-50%);
+  width:700px;height:700px;
+  background:radial-gradient(circle,rgba(255,45,135,.06) 0%,rgba(0,200,150,.04) 40%,transparent 70%);
+  pointer-events:none;z-index:0}
+
+.page{position:relative;z-index:1;max-width:700px;margin:0 auto;padding:0 20px 60px}
+
+/* HEADER */
+.header{text-align:center;padding:40px 0 30px}
+.header-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--pink);border:1px solid rgba(255,45,135,.3);background:rgba(255,45,135,.07);
+  padding:5px 14px;border-radius:100px;margin-bottom:16px}
+.header-title{font-size:clamp(32px,7vw,56px);font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:6px}
+.header-title em{font-style:normal;color:var(--green)}
+.header-title .pink{color:var(--pink)}
+.header-sub{font-size:13px;color:var(--muted);font-weight:300}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);
+  animation:pulse 1.4s ease-in-out infinite;margin-right:6px;vertical-align:middle}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
+
+/* SEARCH */
+.search-wrap{margin-bottom:24px}
+.search-box{position:relative}
+.search-box input{width:100%;background:var(--surface);border:1.5px solid var(--border);
+  border-radius:14px;padding:14px 16px 14px 44px;color:var(--text);
+  font-family:'Sora',sans-serif;font-size:15px;outline:none;
+  transition:border-color .2s,box-shadow .2s}
+.search-box input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-glow)}
+.search-box input::placeholder{color:var(--muted)}
+.search-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+.search-results{margin-top:10px}
+.sr-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;
+  animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.sr-rank{font-size:24px;font-weight:900;color:var(--muted);min-width:44px;text-align:center;font-family:'JetBrains Mono',monospace}
+.sr-rank.top1{color:var(--gold)}
+.sr-rank.top2{color:var(--silver)}
+.sr-rank.top3{color:var(--bronze)}
+.sr-info{flex:1}
+.sr-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px}
+.sr-email{font-size:11px;color:var(--muted)}
+.sr-score{font-size:22px;font-weight:800;color:var(--green);font-family:'JetBrains Mono',monospace}
+.sr-total{font-size:10px;color:var(--muted);text-align:right}
+.no-results{text-align:center;padding:20px;color:var(--muted);font-size:13px}
+
+/* LEADERBOARD */
+.lb-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.lb-title{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green)}
+.lb-meta{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.lb-refreshing{display:inline-block;width:8px;height:8px;border:2px solid var(--border);border-top-color:var(--green);
+  border-radius:50%;animation:spin .8s linear infinite;margin-right:5px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* PODIUM — top 3 */
+.podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px;margin-bottom:20px;align-items:end}
+.podium-item{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:16px 12px;text-align:center;position:relative;overflow:hidden}
+.podium-item.p1{border-color:rgba(255,215,0,.3);background:linear-gradient(160deg,rgba(255,215,0,.06),var(--surface))}
+.podium-item.p2{border-color:rgba(192,192,192,.2);background:linear-gradient(160deg,rgba(192,192,192,.04),var(--surface))}
+.podium-item.p3{border-color:rgba(205,127,50,.2);background:linear-gradient(160deg,rgba(205,127,50,.04),var(--surface))}
+.podium-medal{font-size:28px;margin-bottom:8px;line-height:1}
+.podium-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.podium-score{font-size:clamp(20px,4vw,32px);font-weight:900;letter-spacing:-1px;font-family:'JetBrains Mono',monospace}
+.p1 .podium-score{color:var(--gold)}
+.p2 .podium-score{color:var(--silver)}
+.p3 .podium-score{color:var(--bronze)}
+.podium-pts{font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.podium-attempts{font-size:10px;color:var(--muted);margin-top:4px}
+.crown{position:absolute;top:-2px;right:8px;font-size:18px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+/* REST OF TOP 10 */
+.lb-list{}
+.lb-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:13px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;
+  transition:border-color .2s;animation:fadeItem .4s ease both}
+.lb-item:hover{border-color:rgba(0,200,150,.2)}
+@keyframes fadeItem{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.lb-rank{font-size:13px;font-weight:700;color:var(--muted);min-width:28px;text-align:center;
+  font-family:'JetBrains Mono',monospace}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-attempts{font-size:10px;color:var(--muted);margin-top:1px}
+.lb-score{font-size:20px;font-weight:800;color:var(--green);font-family:'JetBrains Mono',monospace}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-txt{font-size:14px;line-height:1.7}
+
+/* Countdown */
+.countdown{text-align:center;margin-top:20px;font-size:11px;color:var(--muted)}
+.countdown span{color:var(--green);font-family:'JetBrains Mono',monospace;font-weight:700}
+
+/* Loading skeleton */
+.skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);
+  background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:10px;height:60px;margin-bottom:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">🏆 Ranking en vivo</div>
+    <h1 class="header-title">
+      Desafío <em>Airtm</em><br><span class="pink">La Verde</span>
+    </h1>
+    <p class="header-sub"><span class="live-dot"></span>Actualización automática · Airtm Fan Fest</p>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-wrap">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Buscar por nombre o email…" autocomplete="off" oninput="onSearch(this.value)">
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="lb-header">
+    <div class="lb-title">Top 10</div>
+    <div class="lb-meta" id="lbMeta"><span class="lb-refreshing"></span>Cargando…</div>
+  </div>
+
+  <div id="lbContent">
+    <div class="skeleton"></div>
+    <div class="skeleton"></div>
+    <div class="skeleton"></div>
+  </div>
+
+  <div class="countdown">Próxima actualización en <span id="countdown">15</span>s</div>
+
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSBiCIJ1OSD0VawdFn2SlixcgQ8bP4RpnnDLFBEskjLCULV2Mnt8vxHiDtr7eifrvn/exec';
+
+const $ = id => document.getElementById(id);
+let leaderboardData = [];
+let countdownVal = 15;
+let countdownTimer = null;
+let searchTimer = null;
+
+// ── FETCH LEADERBOARD ──
+async function fetchLeaderboard() {
+  try {
+    $('lbMeta').innerHTML = '<span class="lb-refreshing"></span>Actualizando…';
+    const res = await fetch(SCRIPT_URL + '?action=leaderboard', { redirect:'follow' });
+    const data = await res.json();
+    leaderboardData = data.leaderboard || [];
+    renderLeaderboard(leaderboardData, data.total || 0);
+    const now = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    $('lbMeta').textContent = `${data.total || 0} participantes · ${now}`;
+  } catch(e) {
+    $('lbMeta').textContent = 'Error al cargar';
+  }
+}
+
+function renderLeaderboard(lb, total) {
+  const el = $('lbContent');
+  if (!lb.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚽</div><div class="empty-txt">Aún no hay participantes.<br>¡Sé el primero en jugar!</div></div>`;
+    return;
+  }
+
+  let html = '';
+
+  // PODIUM (top 1-3)
+  const medals = ['🥇','🥈','🥉'];
+  const pClasses = ['p1','p2','p3'];
+  const pColors = ['gold','silver','bronze'];
+  // Reorder: 2nd left, 1st center, 3rd right
+  const podiumOrder = [1,0,2]; // indices into lb
+  html += '<div class="podium">';
+  podiumOrder.forEach(idx => {
+    if (!lb[idx]) { html += '<div></div>'; return; }
+    const p = lb[idx];
+    html += `<div class="podium-item ${pClasses[idx]}">
+      ${idx===0 ? '<div class="crown">👑</div>' : ''}
+      <div class="podium-medal">${medals[idx]}</div>
+      <div class="podium-name" title="${esc(p.name)}">${esc(p.name)}</div>
+      <div class="podium-score">${p.score}</div>
+      <div class="podium-pts">puntos</div>
+      <div class="podium-attempts">${p.attempts} intento${p.attempts!==1?'s':''}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Positions 4-10
+  if (lb.length > 3) {
+    html += '<div class="lb-list">';
+    lb.slice(3).forEach((p, i) => {
+      html += `<div class="lb-item" style="animation-delay:${i*0.05}s">
+        <div class="lb-rank">${p.rank}</div>
+        <div class="lb-info">
+          <div class="lb-name">${esc(p.name)}</div>
+          <div class="lb-attempts">${p.attempts} intento${p.attempts!==1?'s':''}</div>
+        </div>
+        <div class="lb-score">${p.score}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ── SEARCH ──
+function onSearch(val) {
+  clearTimeout(searchTimer);
+  const q = val.trim();
+  if (!q) { $('searchResults').innerHTML=''; return; }
+  if (q.length < 2) return;
+  searchTimer = setTimeout(() => doSearch(q), 350);
+}
+
+async function doSearch(q) {
+  // First try local leaderboard data
+  const local = leaderboardData.filter(p =>
+    p.name.toLowerCase().includes(q.toLowerCase()) ||
+    (p.email && p.email.toLowerCase().includes(q.toLowerCase()))
+  );
+  if (local.length) {
+    renderSearchResults(local.map(p => ({...p, total: leaderboardData.length})));
+    return;
+  }
+
+  // Fall back to API search (catches users outside top 10)
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=search_player&query=' + encodeURIComponent(q), {redirect:'follow'});
+    const data = await res.json();
+    renderSearchResults(data.results || []);
+  } catch(e) {}
+}
+
+function renderSearchResults(results) {
+  const el = $('searchResults');
+  if (!results.length) {
+    el.innerHTML = '<div class="no-results">Sin resultados para esa búsqueda.</div>';
+    return;
+  }
+  el.innerHTML = results.map(p => {
+    const rankClass = p.rank===1?'top1':p.rank===2?'top2':p.rank===3?'top3':'';
+    const medals = {1:'🥇',2:'🥈',3:'🥉'};
+    const medal = medals[p.rank] || '';
+    return `<div class="sr-item">
+      <div class="sr-rank ${rankClass}">${medal||('#'+p.rank)}</div>
+      <div class="sr-info">
+        <div class="sr-name">${esc(p.name)}</div>
+        ${p.email?`<div class="sr-email">${esc(p.email)}</div>`:''}
+      </div>
+      <div>
+        <div class="sr-score">${p.score}</div>
+        <div class="sr-total">de ${p.total||'?'} jugadores</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── COUNTDOWN & AUTO REFRESH ──
+function startCountdown() {
+  countdownVal = 15;
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    countdownVal--;
+    $('countdown').textContent = countdownVal;
+    if (countdownVal <= 0) {
+      fetchLeaderboard();
+      startCountdown();
+    }
+  }, 1000);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── INIT ──
+fetchLeaderboard();
+startCountdown();
+</script>
+</body>
+</html>
