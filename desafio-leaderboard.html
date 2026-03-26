@@ -40,8 +40,16 @@ body::after{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-
   animation:pulse 1.4s ease-in-out infinite;margin-right:6px;vertical-align:middle}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
 
-/* SEARCH */
-.search-wrap{margin-bottom:24px}
+/* SEARCH — collapsed by default */
+.search-wrap{margin-bottom:20px}
+.search-toggle-btn{display:flex;align-items:center;gap:7px;background:transparent;
+  border:1px solid var(--border);border-radius:10px;padding:7px 14px;
+  color:var(--muted);font-family:'Sora',sans-serif;font-size:12px;font-weight:600;
+  cursor:pointer;transition:all .2s;margin-bottom:0}
+.search-toggle-btn:hover{border-color:rgba(0,200,150,.3);color:var(--text)}
+.search-toggle-btn.open{border-color:rgba(0,200,150,.3);color:var(--green);background:var(--green-glow)}
+.search-body{max-height:0;overflow:hidden;transition:max-height .35s ease,opacity .3s ease;opacity:0}
+.search-body.open{max-height:300px;opacity:1;margin-top:10px}
 .search-box{position:relative}
 .search-box input{width:100%;background:var(--surface);border:1.5px solid var(--border);
   border-radius:14px;padding:14px 16px 14px 44px;color:var(--text);
@@ -99,7 +107,7 @@ body::after{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-
   padding:13px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;
   transition:border-color .2s;animation:fadeItem .4s ease both}
 .lb-item:hover{border-color:rgba(0,200,150,.2)}
-@keyframes fadeItem{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeItem{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .lb-rank{font-size:13px;font-weight:700;color:var(--muted);min-width:28px;text-align:center;
   font-family:'JetBrains Mono',monospace}
 .lb-info{flex:1;min-width:0}
@@ -112,9 +120,37 @@ body::after{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-
 .empty-icon{font-size:48px;margin-bottom:12px}
 .empty-txt{font-size:14px;line-height:1.7}
 
-/* Countdown */
-.countdown{text-align:center;margin-top:20px;font-size:11px;color:var(--muted)}
-.countdown span{color:var(--green);font-family:'JetBrains Mono',monospace;font-weight:700}
+/* VIEW TOGGLE */
+.view-toggle{display:flex;gap:8px;align-items:center}
+.view-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--border);background:transparent;color:var(--muted);
+  font-family:'Sora',sans-serif;transition:all .2s}
+.view-btn.active{background:var(--green-glow);border-color:rgba(0,200,150,.35);color:var(--text)}
+.view-btn:hover:not(.active){border-color:rgba(0,200,150,.2);color:var(--text)}
+
+/* LIST VIEW — all 10 as rows */
+.list-view .lb-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;
+  transition:border-color .2s, transform .5s cubic-bezier(.22,1,.36,1), opacity .5s ease;
+  animation:fadeItem .45s cubic-bezier(.22,1,.36,1) both}
+.list-view .lb-item:hover{border-color:rgba(0,200,150,.2)}
+.list-item-rank{font-size:20px;font-weight:900;min-width:44px;text-align:center;
+  font-family:'JetBrains Mono',monospace}
+.list-item-rank.r1{color:var(--gold)}
+.list-item-rank.r2{color:var(--silver)}
+.list-item-rank.r3{color:var(--bronze)}
+.list-item-rank.rn{color:var(--muted)}
+.list-item-info{flex:1;min-width:0}
+.list-item-name{font-size:15px;font-weight:700;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item-attempts{font-size:10px;color:var(--muted);margin-top:2px}
+.list-item-score{font-size:24px;font-weight:900;color:var(--green);
+  font-family:'JetBrains Mono',monospace;text-align:right}
+.list-item-pts{font-size:9px;color:var(--muted);text-align:right;
+  text-transform:uppercase;letter-spacing:.5px}
+
+/* Countdown — hidden */
+.countdown{display:none}
 
 /* Loading skeleton */
 .skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);
@@ -134,19 +170,30 @@ body::after{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-
     <p class="header-sub"><span class="live-dot"></span>Actualización automática · Airtm Fan Fest</p>
   </div>
 
-  <!-- SEARCH -->
+  <!-- SEARCH — collapsed -->
   <div class="search-wrap">
-    <div class="search-box">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="Buscar por nombre o email…" autocomplete="off" oninput="onSearch(this.value)">
+    <button class="search-toggle-btn" id="searchToggleBtn" onclick="toggleSearch()">
+      🔍 Buscar participante
+    </button>
+    <div class="search-body" id="searchBody">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar por nombre o email…" autocomplete="off" oninput="onSearch(this.value)">
+      </div>
+      <div class="search-results" id="searchResults"></div>
     </div>
-    <div class="search-results" id="searchResults"></div>
   </div>
 
   <!-- LEADERBOARD -->
   <div class="lb-header">
     <div class="lb-title">Top 10</div>
-    <div class="lb-meta" id="lbMeta"><span class="lb-refreshing"></span>Cargando…</div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="view-toggle">
+        <button class="view-btn active" id="btnList" onclick="setView('list')">☰ Lista</button>
+        <button class="view-btn" id="btnPodium" onclick="setView('podium')">🏆 Podio</button>
+      </div>
+      <div class="lb-meta" id="lbMeta"><span class="lb-refreshing"></span>Cargando…</div>
+    </div>
   </div>
 
   <div id="lbContent">
@@ -174,13 +221,29 @@ async function fetchLeaderboard() {
     $('lbMeta').innerHTML = '<span class="lb-refreshing"></span>Actualizando…';
     const res = await fetch(SCRIPT_URL + '?action=leaderboard', { redirect:'follow' });
     const data = await res.json();
+    const prev = leaderboardData;
     leaderboardData = data.leaderboard || [];
-    renderLeaderboard(leaderboardData, data.total || 0);
+    // Use smooth update if already had data
+    if (currentView === 'list' && prev.length > 0) {
+      const el = $('lbContent');
+      renderListViewSmooth(leaderboardData, el);
+    } else {
+      renderLeaderboard(leaderboardData, data.total || 0);
+    }
     const now = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     $('lbMeta').textContent = `${data.total || 0} participantes · ${now}`;
   } catch(e) {
     $('lbMeta').textContent = 'Error al cargar';
   }
+}
+
+let currentView = 'list';
+
+function setView(v) {
+  currentView = v;
+  $('btnList').classList.toggle('active', v === 'list');
+  $('btnPodium').classList.toggle('active', v === 'podium');
+  renderLeaderboard(leaderboardData, leaderboardData.length);
 }
 
 function renderLeaderboard(lb, total) {
@@ -190,14 +253,42 @@ function renderLeaderboard(lb, total) {
     return;
   }
 
-  let html = '';
+  if (currentView === 'list') {
+    renderListView(lb, el);
+  } else {
+    renderPodiumView(lb, el);
+  }
+}
 
-  // PODIUM (top 1-3)
+function renderListView(lb, el) {
+  const medals = {1:'🥇', 2:'🥈', 3:'🥉'};
+  const rankClass = r => r===1?'r1':r===2?'r2':r===3?'r3':'rn';
+  let html = '<div class="list-view">';
+  lb.forEach((p, i) => {
+    const medal = medals[p.rank] || '';
+    html += `<div class="lb-item" style="animation-delay:${i*0.04}s">
+      <div class="list-item-rank ${rankClass(p.rank)}">${medal || ('#'+p.rank)}</div>
+      <div class="list-item-info">
+        <div class="list-item-name">${esc(p.name)}</div>
+        <div class="list-item-attempts">${p.attempts} intento${p.attempts!==1?'s':''}</div>
+      </div>
+      <div>
+        <div class="list-item-score">${p.score}</div>
+        <div class="list-item-pts">pts</div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderPodiumView(lb, el) {
   const medals = ['🥇','🥈','🥉'];
   const pClasses = ['p1','p2','p3'];
-  const pColors = ['gold','silver','bronze'];
-  // Reorder: 2nd left, 1st center, 3rd right
-  const podiumOrder = [1,0,2]; // indices into lb
+  let html = '';
+
+  // Podium: 2nd left, 1st center, 3rd right
+  const podiumOrder = [1,0,2];
   html += '<div class="podium">';
   podiumOrder.forEach(idx => {
     if (!lb[idx]) { html += '<div></div>'; return; }
@@ -228,7 +319,6 @@ function renderLeaderboard(lb, total) {
     });
     html += '</div>';
   }
-
   el.innerHTML = html;
 }
 
@@ -300,6 +390,46 @@ function startCountdown() {
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── SEARCH TOGGLE ──
+function toggleSearch() {
+  const body = $('searchBody');
+  const btn  = $('searchToggleBtn');
+  const open = body.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  btn.textContent = open ? '✕ Cerrar búsqueda' : '🔍 Buscar participante';
+  if (open) setTimeout(() => $('searchInput').focus(), 200);
+  else { $('searchInput').value = ''; $('searchResults').innerHTML = ''; }
+}
+
+// ── SMOOTH LIST UPDATE ──
+// Instead of replacing innerHTML wholesale, animate position changes
+let prevOrder = [];
+
+function renderListViewSmooth(lb, el) {
+  const medals = {1:'🥇', 2:'🥈', 3:'🥉'};
+  const rankClass = r => r===1?'r1':r===2?'r2':r===3?'r3':'rn';
+
+  // If first render or big change, just render normally
+  const newOrder = lb.map(p => p.qr);
+  const isFirstRender = prevOrder.length === 0;
+  prevOrder = newOrder;
+
+  if (isFirstRender) {
+    renderListView(lb, el);
+    return;
+  }
+
+  // Smooth: fade out old, fade in new with stagger
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(4px)';
+  el.style.transition = 'opacity .3s ease, transform .3s ease';
+  setTimeout(() => {
+    renderListView(lb, el);
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  }, 280);
 }
 
 // ── INIT ──
