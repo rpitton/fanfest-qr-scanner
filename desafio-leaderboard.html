@@ -120,6 +120,57 @@ body::after{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-
 .empty-icon{font-size:48px;margin-bottom:12px}
 .empty-txt{font-size:14px;line-height:1.7}
 
+/* PLAYOFFS VIEW */
+.playoffs-wrap{display:flex;flex-direction:column;gap:16px;padding:8px 0}
+.playoff-card{border-radius:20px;padding:24px 22px;display:flex;align-items:center;gap:20px;position:relative;overflow:hidden;transition:transform .2s}
+.playoff-card:hover{transform:translateY(-2px)}
+
+.playoff-card.pf1{background:linear-gradient(135deg,#1a1400 0%,#2d2200 100%);border:2px solid #FFD700;box-shadow:0 0 40px rgba(255,215,0,.2),inset 0 1px 0 rgba(255,215,0,.3)}
+.playoff-card.pf2{background:linear-gradient(135deg,#111316 0%,#1a1e22 100%);border:2px solid #C0C0C0;box-shadow:0 0 24px rgba(192,192,192,.15),inset 0 1px 0 rgba(192,192,192,.2)}
+.playoff-card.pf3{background:linear-gradient(135deg,#130d08 0%,#1e1510 100%);border:2px solid #CD7F32;box-shadow:0 0 20px rgba(205,127,50,.15),inset 0 1px 0 rgba(205,127,50,.2)}
+
+.pf-rank-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px}
+.pf-medal{font-size:40px;line-height:1;filter:drop-shadow(0 0 8px currentColor)}
+.pf1 .pf-medal{filter:drop-shadow(0 0 12px rgba(255,215,0,.6))}
+.pf2 .pf-medal{filter:drop-shadow(0 0 8px rgba(192,192,192,.5))}
+.pf3 .pf-medal{filter:drop-shadow(0 0 8px rgba(205,127,50,.5))}
+.pf-pos{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
+.pf1 .pf-pos{color:var(--gold)}
+.pf2 .pf-pos{color:var(--silver)}
+.pf3 .pf-pos{color:var(--bronze)}
+
+.pf-info{flex:1;min-width:0}
+.pf-name{font-size:20px;font-weight:800;letter-spacing:-.4px;margin-bottom:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf1 .pf-name{color:#FFD700}
+.pf2 .pf-name{color:#E8E8E8}
+.pf3 .pf-name{color:#CD7F32}
+.pf-attempts{font-size:11px;color:var(--muted);margin-bottom:8px}
+.pf-prize{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:100px;font-size:13px;font-weight:700}
+.pf1 .pf-prize{background:rgba(255,215,0,.15);color:#FFD700;border:1px solid rgba(255,215,0,.3)}
+.pf2 .pf-prize{background:rgba(192,192,192,.12);color:#C0C0C0;border:1px solid rgba(192,192,192,.25)}
+.pf3 .pf-prize{background:rgba(205,127,50,.12);color:#CD7F32;border:1px solid rgba(205,127,50,.25)}
+
+.pf-score-wrap{text-align:right;flex-shrink:0}
+.pf-score{font-size:36px;font-weight:900;letter-spacing:-1px;font-family:'JetBrains Mono',monospace;line-height:1}
+.pf1 .pf-score{color:#FFD700;text-shadow:0 0 20px rgba(255,215,0,.4)}
+.pf2 .pf-score{color:#C0C0C0;text-shadow:0 0 12px rgba(192,192,192,.3)}
+.pf3 .pf-score{color:#CD7F32;text-shadow:0 0 12px rgba(205,127,50,.3)}
+.pf-pts{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;text-align:right}
+
+/* rest of list below top 3 in playoffs */
+.playoffs-rest{margin-top:8px}
+.playoffs-rest .lb-item{opacity:.7}
+.playoffs-rest .lb-item:hover{opacity:1}
+
+/* CORNER GLOW */
+.playoff-card::before{content:'';position:absolute;top:-40px;right:-40px;
+  width:120px;height:120px;border-radius:50%;opacity:.15;pointer-events:none}
+.pf1::before{background:radial-gradient(circle,#FFD700,transparent)}
+.pf2::before{background:radial-gradient(circle,#C0C0C0,transparent)}
+.pf3::before{background:radial-gradient(circle,#CD7F32,transparent)}
+
+/* VIEW TOGGLE */
 /* VIEW TOGGLE */
 .view-toggle{display:flex;gap:8px;align-items:center}
 .view-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;cursor:pointer;
@@ -192,6 +243,7 @@ body::after{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-
       <div class="view-toggle">
         <button class="view-btn active" id="btnList" onclick="setView('list')">☰ Lista</button>
         <button class="view-btn" id="btnPodium" onclick="setView('podium')">🏆 Podio</button>
+        <button class="view-btn" id="btnPlayoffs" onclick="setView('playoffs')">🎖️ Playoffs</button>
       </div>
       <div class="lb-meta" id="lbMeta"><span class="lb-refreshing"></span>Cargando…</div>
     </div>
@@ -244,6 +296,7 @@ function setView(v) {
   currentView = v;
   $('btnList').classList.toggle('active', v === 'list');
   $('btnPodium').classList.toggle('active', v === 'podium');
+  $('btnPlayoffs').classList.toggle('active', v === 'playoffs');
   renderLeaderboard(leaderboardData, leaderboardData.length);
 }
 
@@ -256,6 +309,8 @@ function renderLeaderboard(lb, total) {
 
   if (currentView === 'list') {
     renderListView(lb, el);
+  } else if (currentView === 'playoffs') {
+    renderPlayoffsView(lb, el);
   } else {
     renderPodiumView(lb, el);
   }
@@ -320,6 +375,58 @@ function renderPodiumView(lb, el) {
     });
     html += '</div>';
   }
+  el.innerHTML = html;
+}
+
+function renderPlayoffsView(lb, el) {
+  const prizes = ['500 USDC', '300 USDC', '100 USDC'];
+  const medals = ['🥇','🥈','🥉'];
+  const pfClass = ['pf1','pf2','pf3'];
+  const positions = ['1er Lugar','2do Lugar','3er Lugar'];
+
+  let html = '<div class="playoffs-wrap">';
+
+  // Top 3 — big playoff cards
+  lb.slice(0, 3).forEach((p, i) => {
+    if (!p) return;
+    html += `<div class="playoff-card ${pfClass[i]}">
+      <div class="pf-rank-wrap">
+        <div class="pf-medal">${medals[i]}</div>
+        <div class="pf-pos">${positions[i]}</div>
+      </div>
+      <div class="pf-info">
+        <div class="pf-name">${esc(p.name)}</div>
+        <div class="pf-attempts">${p.attempts} intento${p.attempts!==1?'s':''}</div>
+        <div class="pf-prize">🏆 ${prizes[i]}</div>
+      </div>
+      <div class="pf-score-wrap">
+        <div class="pf-score">${p.score}</div>
+        <div class="pf-pts">puntos</div>
+      </div>
+    </div>`;
+  });
+
+  html += '</div>';
+
+  // Positions 4-10 below
+  if (lb.length > 3) {
+    html += '<div class="playoffs-rest">';
+    lb.slice(3).forEach((p, i) => {
+      html += `<div class="lb-item" style="animation-delay:${i*0.05}s">
+        <div class="list-item-rank rn">#${p.rank}</div>
+        <div class="list-item-info">
+          <div class="list-item-name">${esc(p.name)}</div>
+          <div class="list-item-attempts">${p.attempts} intento${p.attempts!==1?'s':''}</div>
+        </div>
+        <div>
+          <div class="list-item-score">${p.score}</div>
+          <div class="list-item-pts">pts</div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
   el.innerHTML = html;
 }
 
