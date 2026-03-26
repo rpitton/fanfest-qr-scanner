@@ -568,79 +568,120 @@ async function submitGuest() {
   $('submitGuestBtn').disabled = false;
 }
 
+// ─── QR PARSE ───
+// Extracts username from QR: "airtm.me/username" → "username"
+function parseQR(raw) {
+  const trimmed = raw.trim();
+  const slashIdx = trimmed.lastIndexOf('/');
+  if (slashIdx !== -1) return trimmed.substring(slashIdx + 1).trim();
+  return trimmed;
+}
+
+// ─── SCAN FLASH ───
+// Immediate visual + haptic feedback when QR is detected
+function flashScanFeedback() {
+  // Haptic
+  if (navigator.vibrate) navigator.vibrate(60);
+  // Visual flash on cam overlay
+  const overlay = document.querySelector('.cam-overlay');
+  if (overlay) {
+    overlay.style.background = 'rgba(0,200,150,0.25)';
+    setTimeout(() => { overlay.style.background = ''; }, 200);
+  }
+  // Status text
+  $('camStatusText').textContent = '✓ QR detectado — procesando…';
+}
+
 // ─── API ───
 async function apiCall(params) {
   const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
   const res = await fetch(url, { redirect:'follow' });
   if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
+  const json = await res.json();
+  return json;
 }
 
 // ─── MAIN HANDLER ───
 let processing = false;
+let lastQR = '';
 
-async function handleQR(qrData) {
+async function handleQR(qrRaw) {
+  // Prevent double-fire on same QR
+  const qrParsed = parseQR(qrRaw);
   if (processing) return false;
+  if (qrParsed === lastQR) return false;
+
   const username = getUsername();
   if (!username) { showErr('err-user', true); $('configPanel').classList.add('show'); return false; }
   showErr('err-user', false);
 
+  // ── Immediate feedback ──
+  flashScanFeedback();
+  lastQR = qrParsed;
   processing = true;
   showResult('resultLoading');
 
   try {
     const timestamp = new Date().toISOString();
-    const check = await apiCall({ action:'check', qr: qrData });
+
+    // Always log to 'asistentes' sheet first
+    await apiCall({ action:'log_scan', qr:qrParsed, raw:qrRaw, username, timestamp });
+
+    // Then check against confirmed list
+    const check = await apiCall({ action:'check', qr: qrParsed });
 
     if (check.status === 'already_scanned') {
       playBeep('dup');
       showResult('resultDuplicate', 7000);
+      // Auto-reset lastQR after cooldown so same person can be re-checked
+      setTimeout(() => { lastQR = ''; }, 8000);
       processing = false;
       return false;
     }
 
     if (check.status === 'confirmed') {
-      await apiCall({ action:'register', qr:qrData, username, timestamp });
+      await apiCall({ action:'register', qr:qrParsed, username, timestamp });
       playBeep('ok');
-
       $('resultName').textContent   = check.name       || 'Confirmado';
       $('resultStatus').textContent = check.userStatus || 'Confirmado';
-
-      // Invitee
       const inv = check.inviteeName && check.inviteeName.trim();
       $('inviteeText').textContent = inv ? `Invitado: ${inv}` : 'No tiene invitado';
       $('inviteeRow').style.display = 'flex';
-
       showResult('resultSuccess', 8000);
-      pushLocal({ qr:qrData, username, timestamp, name:check.name, status:check.userStatus, inviteeName: check.inviteeName || '' });
+      pushLocal({ qr:qrParsed, username, timestamp, name:check.name, status:check.userStatus, inviteeName: check.inviteeName || '' });
       renderLog(); updateCounters();
+      setTimeout(() => { lastQR = ''; }, 9000);
       processing = false;
       return true;
     }
 
     if (check.status === 'not_found') {
-      await apiCall({ action:'register', qr:qrData, username, timestamp });
+      await apiCall({ action:'register', qr:qrParsed, username, timestamp });
       playBeep('warn');
-      $('resultQRData').textContent = qrData;
-      currentScanQR   = qrData;
+      $('resultQRData').textContent = qrParsed;
+      currentScanQR   = qrParsed;
       currentScanName = '';
-      // Reset guest form
       $('guestForm').classList.remove('show');
-      showResult('resultNotFound'); // no autohide — user may add guest
-      pushLocal({ qr:qrData, username, timestamp, name:'', status:'No confirmado', inviteeName:'' });
+      showResult('resultNotFound');
+      pushLocal({ qr:qrParsed, username, timestamp, name:'', status:'No confirmado', inviteeName:'' });
       renderLog(); updateCounters();
+      setTimeout(() => { lastQR = ''; }, 9000);
       processing = false;
       return true;
     }
 
     hideResults();
     processing = false;
+    lastQR = '';
     return false;
 
   } catch(err) {
     hideResults();
-    alert('Error de conexión.\n' + err.message);
+    $('camStatusText').textContent = 'Error: ' + err.message;
+    showResult('resultNotFound');
+    $('resultQRData').textContent = 'Error de conexión: ' + err.message;
     processing = false;
+    lastQR = '';
     return false;
   }
 }
