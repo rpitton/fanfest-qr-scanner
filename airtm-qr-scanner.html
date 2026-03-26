@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Airtm Fan Fest — Control de Acceso</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<style>
+:root {
+  --green:#00C896; --green-dark:#00A87D; --green-glow:rgba(0,200,150,0.13);
+  --bg:#090E0C; --surface:#101815; --surface2:#172220;
+  --border:rgba(0,200,150,0.11); --text:#E8F5F2; --muted:rgba(232,245,242,0.42);
+  --danger:#FF4D6A; --warning:#FFAB40; --info:#60A5FA;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,200,150,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,.035) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0}
+
+/* ── STICKY COUNTER ── */
+#stickyBar{position:sticky;top:0;z-index:100;background:rgba(9,14,12,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 18px;display:none}
+#stickyBar.visible{display:block}
+.sticky-inner{max-width:480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sticky-total{font-size:28px;font-weight:700;color:var(--green);letter-spacing:-1px;line-height:1}
+.sticky-label{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.sticky-breakdown{display:flex;gap:12px}
+.sb-item{text-align:center}
+.sb-num{font-size:16px;font-weight:700;color:var(--text)}
+.sb-pct{font-size:9px;color:var(--muted)}
+.sb-sep{width:1px;background:var(--border);align-self:stretch}
+.sticky-event{font-size:11px;font-weight:600;color:var(--green);opacity:.7;white-space:nowrap}
+
+.wrap{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:0 18px 80px}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:22px 0 8px}
+.logo{font-size:19px;font-weight:700;letter-spacing:-.4px;display:flex;align-items:center;gap:8px}
+.logo-mark{width:30px;height:30px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#090E0C}
+.logo em{font-style:normal;color:var(--green)}
+.header-right{display:flex;align-items:center;gap:8px}
+.pill{font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--green);border:1px solid rgba(0,200,150,.28);background:var(--green-glow);padding:5px 12px;border-radius:100px}
+.icon-btn{width:36px;height:36px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s}
+.icon-btn:hover{border-color:var(--green);background:var(--green-glow)}
+.icon-btn.active{background:var(--green-glow);border-color:var(--green)}
+
+.event-title{font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:3px}
+.event-title em{font-style:normal;color:var(--green)}
+.sub{font-size:12px;color:var(--muted);font-weight:300;margin-bottom:20px;line-height:1.6}
+
+/* ── CONFIG PANEL ── */
+.config-panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px;margin-bottom:14px;animation:fadeUp .3s ease}
+.config-panel.show{display:block}
+.config-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.config-row:last-child{border-bottom:none;padding-bottom:0}
+.config-row:first-child{padding-top:0}
+.config-label{font-size:13px;font-weight:600;color:var(--text)}
+.config-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--surface2);border-radius:24px;cursor:pointer;transition:.3s;border:1px solid var(--border)}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:var(--muted);border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:var(--green-glow);border-color:var(--green)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:var(--green)}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px;margin-bottom:14px;transition:border-color .25s}
+.card:focus-within{border-color:rgba(0,200,150,.3)}
+.card-label{font-size:10px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.card-label::before{content:'';display:block;width:4px;height:4px;border-radius:50%;background:var(--green)}
+
+input[type="text"],input[type="tel"],input[type="email"],input[type="number"]{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-family:'Sora',sans-serif;font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
+input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-glow)}
+input::placeholder{color:var(--muted)}
+
+/* ── SCANNER ── */
+.mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.mode-tab{padding:11px;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .2s;text-align:center}
+.mode-tab.active{background:var(--green-glow);border-color:rgba(0,200,150,.35);color:var(--text)}
+#livePanel{display:none}
+#livePanel.show{display:block}
+#uploadPanel{display:none}
+#uploadPanel.show{display:block}
+
+.cam-wrap{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:1}
+#camVideo{width:100%;height:100%;object-fit:cover;display:block}
+canvas#camCanvas{display:none}
+.cam-overlay{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.cam-frame{width:54%;aspect-ratio:1;position:relative}
+.cam-frame::before,.cam-frame::after,.cam-frame span::before,.cam-frame span::after{content:'';position:absolute;width:22px;height:22px;border-color:var(--green);border-style:solid}
+.cam-frame::before{top:0;left:0;border-width:2.5px 0 0 2.5px;border-radius:3px 0 0 0}
+.cam-frame::after{top:0;right:0;border-width:2.5px 2.5px 0 0;border-radius:0 3px 0 0}
+.cam-frame span::before{bottom:0;left:0;border-width:0 0 2.5px 2.5px;border-radius:0 0 0 3px}
+.cam-frame span::after{bottom:0;right:0;border-width:0 2.5px 2.5px 0;border-radius:0 0 3px 0}
+.scan-line{position:absolute;left:4%;right:4%;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);box-shadow:0 0 8px var(--green);animation:scanMove 2.4s ease-in-out infinite;top:8%}
+@keyframes scanMove{0%,100%{top:8%;opacity:0}10%{opacity:1}90%{opacity:1}50%{top:88%}}
+
+.upload-zone{border:2px dashed rgba(0,200,150,.25);border-radius:16px;padding:32px 20px;text-align:center;cursor:pointer;background:var(--surface2);transition:all .2s;position:relative;overflow:hidden}
+.upload-zone:hover{border-color:var(--green);background:var(--green-glow)}
+.upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:0}
+.upload-icon{font-size:32px;margin-bottom:8px}
+.upload-title{font-size:14px;font-weight:600;margin-bottom:4px}
+.upload-hint{font-size:11px;color:var(--muted);line-height:1.5}
+.upload-hint strong{color:var(--green)}
+#previewWrap{display:none;margin-top:12px}
+#previewImg{width:100%;display:block;border-radius:12px;max-height:220px;object-fit:contain;background:#000}
+
+.status-row{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;font-weight:500;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot.green{background:var(--green);animation:pulse 1.2s ease-in-out infinite}
+.dot.gray{background:var(--muted)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+/* ── BUTTONS ── */
+.btn{width:100%;padding:14px;border-radius:13px;font-family:'Sora',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .2s;letter-spacing:.2px}
+.btn-primary{background:var(--green);color:#090E0C}
+.btn-primary:hover{background:var(--green-dark);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,200,150,.28)}
+.btn-primary:active{transform:none}
+.btn-danger{background:rgba(255,77,106,.12);color:var(--danger);border:1px solid rgba(255,77,106,.25)}
+.btn-danger:hover{background:rgba(255,77,106,.2)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--green);color:var(--text)}
+.btn-warning{background:rgba(255,171,64,.12);color:var(--warning);border:1px solid rgba(255,171,64,.3)}
+.btn-warning:hover{background:rgba(255,171,64,.2)}
+.btn-sm{padding:10px 18px;width:auto;font-size:13px;border-radius:10px}
+
+/* ── RESULT MODALS ── */
+.result-modal{display:none;border-radius:20px;padding:24px 22px;margin-bottom:14px;animation:fadeUp .35s ease;text-align:center}
+.result-modal.show{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.result-modal.loading{background:var(--surface2);border:1.5px solid var(--border)}
+.result-modal.success{background:rgba(0,200,150,.07);border:1.5px solid rgba(0,200,150,.35)}
+.result-modal.duplicate{background:rgba(255,171,64,.08);border:1.5px solid rgba(255,171,64,.35)}
+.result-modal.not-found{background:rgba(255,77,106,.07);border:1.5px solid rgba(255,77,106,.28)}
+.result-icon{font-size:40px;margin-bottom:10px;line-height:1}
+.result-name{font-size:24px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:6px;line-height:1.2}
+.result-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 14px;border-radius:100px;margin-bottom:10px}
+.success .result-badge{background:var(--green);color:#090E0C}
+.duplicate .result-badge{background:var(--warning);color:#090E0C}
+.not-found .result-badge{background:var(--danger);color:#fff}
+.result-msg{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* Invitee row inside result */
+.invitee-row{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0 4px;padding:10px 14px;background:rgba(0,200,150,.06);border-radius:10px;border:1px solid rgba(0,200,150,.12)}
+.invitee-icon{font-size:14px}
+.invitee-text{font-size:13px;color:var(--text);font-weight:500}
+
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── GUEST FORM ── */
+.guest-form{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);animation:fadeUp .3s ease}
+.guest-form.show{display:block}
+.guest-form-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px}
+.quick-count{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
+.qc-btn{padding:10px 6px;border-radius:10px;font-family:'Sora',sans-serif;font-size:15px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .2s;text-align:center}
+.qc-btn.active,.qc-btn:hover{background:var(--green-glow);border-color:var(--green);color:var(--text)}
+.field-row{margin-bottom:10px}
+.field-label{font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.optional-tag{color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px}
+.form-actions{display:flex;gap:8px;margin-top:12px}
+
+/* ── COUNTER CARD ── */
+.counter-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:20px 22px;margin-bottom:14px}
+.counter-main{display:flex;align-items:flex-end;gap:6px;margin-bottom:14px}
+.counter-total{font-size:52px;font-weight:700;color:var(--green);letter-spacing:-2px;line-height:1}
+.counter-lbl{font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500}
+.counter-breakdown{display:grid;grid-template-columns:1fr 1px 1fr;gap:0;background:var(--surface2);border-radius:14px;overflow:hidden}
+.cb-item{padding:12px 16px;text-align:center}
+.cb-sep{background:var(--border)}
+.cb-num{font-size:22px;font-weight:700;color:var(--text)}
+.cb-label{font-size:10px;color:var(--muted);font-weight:500;margin-bottom:2px}
+.cb-pct{font-size:10px;color:var(--green);font-weight:600}
+
+/* ── LOG ── */
+.log-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:0}
+.log-count{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);background:var(--surface2);padding:4px 10px;border-radius:100px}
+.log-actions{display:flex;gap:6px;align-items:center}
+.btn-csv{font-size:11px;padding:6px 12px;border-radius:8px;background:transparent;color:var(--green);border:1px solid rgba(0,200,150,.28);cursor:pointer;font-family:'Sora',sans-serif;font-weight:600;transition:all .2s}
+.btn-csv:hover{background:var(--green-glow);border-color:var(--green)}
+.btn-toggle{font-size:11px;padding:6px 12px;border-radius:8px;background:transparent;color:var(--muted);border:1px solid var(--border);cursor:pointer;font-family:'Sora',sans-serif;font-weight:600;transition:all .2s}
+.btn-toggle:hover{border-color:var(--green);color:var(--text)}
+.log-list-wrap{overflow:hidden;transition:max-height .4s ease;max-height:0}
+.log-list-wrap.open{max-height:2000px}
+#logList{padding-top:14px}
+
+.empty{text-align:center;padding:24px 0;color:var(--muted);font-size:13px}
+.empty .ei{font-size:26px;margin-bottom:8px}
+
+.scan-item{background:var(--surface2);border:1px solid var(--border);border-radius:13px;padding:12px 14px;margin-bottom:8px;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.si-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;flex-wrap:wrap;gap:4px}
+.si-user{display:flex;align-items:center;gap:7px}
+.avatar{width:26px;height:26px;background:var(--green-glow);border:1px solid rgba(0,200,150,.28);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;flex-shrink:0}
+.si-username{font-size:12px;font-weight:600}
+.si-time{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted)}
+.si-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px}
+.si-invitee{font-size:12px;color:var(--muted);margin-bottom:4px}
+.si-invitee span{color:var(--text);font-weight:500}
+.si-status{display:inline-block;font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:2px 9px;border-radius:100px;margin-bottom:5px}
+.si-status.ok{background:var(--green);color:#090E0C}
+.si-status.no{background:var(--surface);color:var(--muted);border:1px solid var(--border)}
+.si-data{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);background:rgba(0,200,150,.04);border-radius:7px;padding:5px 9px;word-break:break-all;line-height:1.5}
+
+.err{display:none;font-size:12px;color:var(--danger);margin-top:8px;padding:8px 12px;background:rgba(255,77,106,.07);border-radius:10px;border:1px solid rgba(255,77,106,.18)}
+.err.show{display:block}
+</style>
+</head>
+<body>
+
+<!-- STICKY COUNTER BAR -->
+<div id="stickyBar">
+  <div class="sticky-inner">
+    <div>
+      <div class="sticky-total" id="sTotal">0</div>
+      <div class="sticky-label">Total ingresos</div>
+    </div>
+    <div class="sticky-breakdown">
+      <div class="sb-item">
+        <div class="sb-num" id="sUsers">0</div>
+        <div class="sb-pct" id="sUsersPct">— usuarios</div>
+      </div>
+      <div class="sb-sep"></div>
+      <div class="sb-item">
+        <div class="sb-num" id="sGuests">0</div>
+        <div class="sb-pct" id="sGuestsPct">— invitados</div>
+      </div>
+    </div>
+    <div class="sticky-event">Fan Fest 🎉</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header>
+    <div class="logo">
+      <div class="logo-mark">✦</div>
+      <span><em>Air</em>tm</span>
+    </div>
+    <div class="header-right">
+      <div class="pill">Fan Fest</div>
+      <div class="icon-btn" id="configBtn" onclick="toggleConfig()" title="Configuración">⚙️</div>
+    </div>
+  </header>
+
+  <div class="event-title">Airtm <em>Fan Fest</em></div>
+  <p class="sub">Control de acceso · Verificación en tiempo real</p>
+
+  <!-- CONFIG PANEL -->
+  <div class="config-panel" id="configPanel">
+    <div class="card-label">Configuración</div>
+
+    <div class="config-row">
+      <div>
+        <div class="config-label">Operador</div>
+        <div class="config-desc">Tu nombre aparece en cada registro</div>
+      </div>
+    </div>
+    <div style="padding:8px 0 12px">
+      <input type="text" id="username" placeholder="@tu-username" maxlength="40" autocomplete="off" autocapitalize="off">
+      <div class="err" id="err-user">⚠ Ingresa tu username para continuar.</div>
+    </div>
+
+    <div class="config-row">
+      <div>
+        <div class="config-label">🔔 Sonido al confirmar</div>
+        <div class="config-desc">Beep de confirmación al ingresar</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="toggleSound" checked><span class="toggle-slider"></span></label>
+    </div>
+
+    <div class="config-row">
+      <div>
+        <div class="config-label">💡 Modo evento</div>
+        <div class="config-desc">Evita que la pantalla se apague</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="toggleWakeLock" onchange="handleWakeLock(this.checked)"><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <!-- SCANNER CARD -->
+  <div class="card">
+    <div class="card-label">Escanear QR</div>
+    <div class="mode-tabs">
+      <div class="mode-tab active" id="tab-live" onclick="setMode('live')">🎥 Cámara en vivo</div>
+      <div class="mode-tab" id="tab-upload" onclick="setMode('upload')">📷 Foto / Carrete</div>
+    </div>
+
+    <!-- LIVE -->
+    <div id="livePanel" class="show">
+      <div class="cam-wrap">
+        <video id="camVideo" autoplay playsinline muted></video>
+        <canvas id="camCanvas"></canvas>
+        <div class="cam-overlay"><div class="cam-frame"><span></span><div class="scan-line"></div></div></div>
+      </div>
+      <div class="status-row">
+        <div class="dot gray" id="camDot"></div>
+        <span id="camStatusText">Cámara inactiva</span>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:10px">
+        <button class="btn btn-primary" id="startBtn" onclick="startCam()">🎥 Iniciar cámara</button>
+        <button class="btn btn-danger" id="stopBtn" onclick="stopCam()" style="display:none">⏹ Detener</button>
+      </div>
+      <div class="err" id="err-cam">⚠ No se pudo acceder a la cámara. Intenta el modo Foto.</div>
+    </div>
+
+    <!-- UPLOAD -->
+    <div id="uploadPanel">
+      <div class="upload-zone">
+        <input type="file" id="fileInput" accept="image/*" capture="environment">
+        <div class="upload-icon">📲</div>
+        <div class="upload-title">Toca para abrir cámara</div>
+        <div class="upload-hint">O selecciona imagen del carrete.<br><strong>✓ Funciona en Safari iPhone.</strong></div>
+      </div>
+      <div id="previewWrap"><img id="previewImg" alt="preview"></div>
+      <div class="err" id="err-qr">❌ No se detectó QR. Intenta con más luz o acércate más.</div>
+    </div>
+  </div>
+
+  <!-- RESULT: Loading -->
+  <div class="result-modal loading" id="resultLoading">
+    <div class="spinner"></div>
+    <div class="result-msg">Verificando acceso…</div>
+  </div>
+
+  <!-- RESULT: Confirmed -->
+  <div class="result-modal success" id="resultSuccess">
+    <div class="result-icon">✅</div>
+    <div class="result-name" id="resultName"></div>
+    <div class="result-badge" id="resultStatus"></div>
+    <div class="invitee-row" id="inviteeRow">
+      <span class="invitee-icon">👤</span>
+      <span class="invitee-text" id="inviteeText"></span>
+    </div>
+    <div class="result-msg" style="margin-top:8px">Acceso autorizado · Registro guardado</div>
+  </div>
+
+  <!-- RESULT: Not found -->
+  <div class="result-modal not-found" id="resultNotFound">
+    <div class="result-icon">⚠️</div>
+    <div class="result-name">No encontrado</div>
+    <div class="result-badge">No confirmado</div>
+    <div class="result-msg" id="resultQRData" style="word-break:break-all;margin-bottom:12px"></div>
+    <!-- ADD GUEST BUTTON -->
+    <button class="btn btn-warning btn-sm" onclick="toggleGuestForm()" id="addGuestBtn" style="margin:0 auto;max-width:220px">➕ Agregar invitado</button>
+    <!-- GUEST FORM -->
+    <div class="guest-form" id="guestForm">
+      <div class="guest-form-title">¿Cuántos invitados trae?</div>
+      <div class="quick-count" id="quickCount">
+        <div class="qc-btn" onclick="selectCount(1)">1</div>
+        <div class="qc-btn" onclick="selectCount(2)">2</div>
+        <div class="qc-btn" onclick="selectCount(3)">3</div>
+        <div class="qc-btn" onclick="selectCount(4)">4</div>
+        <div class="qc-btn" onclick="selectCount(5)">5+</div>
+      </div>
+      <div class="field-row">
+        <div class="field-label">Nombre completo <span class="optional-tag">(opcional)</span></div>
+        <input type="text" id="guestName" placeholder="Ej. María González">
+      </div>
+      <div class="field-row">
+        <div class="field-label">Celular o email <span class="optional-tag">(opcional)</span></div>
+        <input type="text" id="guestContact" placeholder="Ej. +591 70000000">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost btn-sm" onclick="toggleGuestForm()">Cancelar</button>
+        <button class="btn btn-warning btn-sm" onclick="submitGuest()" style="flex:1" id="submitGuestBtn">Guardar invitado</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT: Duplicate -->
+  <div class="result-modal duplicate" id="resultDuplicate">
+    <div class="result-icon">🚫</div>
+    <div class="result-name">Este QR ya ha ingresado</div>
+    <div class="result-badge">Duplicado</div>
+    <div class="result-msg">Este código ya fue escaneado anteriormente.</div>
+  </div>
+
+  <!-- COUNTER CARD -->
+  <div class="counter-card">
+    <div class="counter-main">
+      <div class="counter-total" id="counterTotal">0</div>
+      <div class="counter-lbl">ingresos totales</div>
+    </div>
+    <div class="counter-breakdown">
+      <div class="cb-item">
+        <div class="cb-label">Usuarios</div>
+        <div class="cb-num" id="cbUsers">0</div>
+        <div class="cb-pct" id="cbUsersPct">—</div>
+      </div>
+      <div class="cb-sep"></div>
+      <div class="cb-item">
+        <div class="cb-label">Invitados</div>
+        <div class="cb-num" id="cbGuests">0</div>
+        <div class="cb-pct" id="cbGuestsPct">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="card">
+    <div class="log-bar">
+      <div class="card-label" style="margin-bottom:0">Historial</div>
+      <div class="log-actions">
+        <button class="btn-csv" onclick="exportCSV()">⬇ CSV</button>
+        <button class="btn-toggle" id="logToggleBtn" onclick="toggleLog()">Ver detalles ▾</button>
+      </div>
+    </div>
+    <div class="log-list-wrap" id="logListWrap">
+      <div id="logList"></div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+// ─── CONFIG ───
+const SCRIPT_URL = 'https://script.google.com/a/macros/airtm.io/s/AKfycbxWbFk41sBGinvgU-hVRtSNS8N0uUvbp9DmPJGrynEmH7ITV1e1bLjvw3aguurnKoJU/exec';
+const LOCAL_KEY  = 'fanfest_access_v1';
+const GUEST_KEY  = 'fanfest_guests_v1';
+
+// ─── UTILS ───
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const $   = id  => document.getElementById(id);
+const showErr = (id, v) => $(id).classList.toggle('show', v);
+const getLocal  = k => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } };
+const saveLocal = (k,d) => localStorage.setItem(k, JSON.stringify(d));
+
+function getUsername() {
+  const u = $('username').value.trim();
+  if (!u) return null;
+  return u.startsWith('@') ? u : '@' + u;
+}
+
+// ─── CONFIG PANEL ───
+function toggleConfig() {
+  $('configPanel').classList.toggle('show');
+  $('configBtn').classList.toggle('active');
+}
+
+// ─── WAKE LOCK ───
+let wakeLock = null;
+async function handleWakeLock(enable) {
+  if (enable) {
+    try { wakeLock = await navigator.wakeLock.request('screen'); }
+    catch(e) { $('toggleWakeLock').checked = false; }
+  } else {
+    if (wakeLock) { await wakeLock.release(); wakeLock = null; }
+  }
+}
+
+// ─── SOUND ───
+function playBeep(type = 'ok') {
+  if (!$('toggleSound').checked) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if (type === 'ok') {
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.start(); osc.stop(ctx.currentTime + 0.35);
+    } else if (type === 'warn') {
+      osc.frequency.setValueAtTime(400, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(); osc.stop(ctx.currentTime + 0.4);
+    } else { // duplicate
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      osc.start(); osc.stop(ctx.currentTime + 0.5);
+    }
+  } catch(e) {}
+}
+
+// ─── MODE SWITCH ───
+let mode = 'live';
+function setMode(m) {
+  if (m === mode) return;
+  if (mode === 'live') stopCam();
+  mode = m;
+  $('tab-live').classList.toggle('active', m === 'live');
+  $('tab-upload').classList.toggle('active', m === 'upload');
+  $('livePanel').classList.toggle('show', m === 'live');
+  $('uploadPanel').classList.toggle('show', m === 'upload');
+}
+
+// ─── RESULT MODALS ───
+function hideResults() {
+  ['resultLoading','resultSuccess','resultNotFound','resultDuplicate']
+    .forEach(id => $(id).classList.remove('show'));
+}
+function showResult(id, ms = 0) {
+  hideResults();
+  $(id).classList.add('show');
+  $(id).scrollIntoView({ behavior:'smooth', block:'nearest' });
+  if (ms) setTimeout(() => { $(id).classList.remove('show'); }, ms);
+}
+
+// ─── GUEST FORM ───
+let currentGuestCount = 0;
+let currentScanQR = '';
+let currentScanName = '';
+
+function toggleGuestForm() {
+  $('guestForm').classList.toggle('show');
+  currentGuestCount = 0;
+  document.querySelectorAll('.qc-btn').forEach(b => b.classList.remove('active'));
+  $('guestName').value = '';
+  $('guestContact').value = '';
+}
+
+function selectCount(n) {
+  currentGuestCount = n;
+  document.querySelectorAll('.qc-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === n - 1);
+  });
+}
+
+async function submitGuest() {
+  if (!currentGuestCount) { alert('Selecciona la cantidad de invitados.'); return; }
+  const username  = getUsername() || 'operador';
+  const guestName = $('guestName').value.trim();
+  const contact   = $('guestContact').value.trim();
+  const timestamp = new Date().toISOString();
+
+  $('submitGuestBtn').textContent = 'Guardando…';
+  $('submitGuestBtn').disabled = true;
+
+  try {
+    await apiCall({
+      action: 'add_guests',
+      qr: currentScanQR, username, timestamp,
+      count: currentGuestCount,
+      guest_name: guestName,
+      contact: contact,
+      host_name: currentScanName
+    });
+
+    // Save locally
+    const guests = getLocal(GUEST_KEY);
+    guests.push({ id: Date.now(), timestamp, username, hostQR: currentScanQR, hostName: currentScanName, count: currentGuestCount, guestName, contact });
+    saveLocal(GUEST_KEY, guests);
+
+    updateCounters();
+    toggleGuestForm();
+    alert(`✅ ${currentGuestCount} invitado${currentGuestCount>1?'s':''} registrado${currentGuestCount>1?'s':''}`);
+  } catch(e) {
+    alert('Error al guardar: ' + e.message);
+  }
+
+  $('submitGuestBtn').textContent = 'Guardar invitado';
+  $('submitGuestBtn').disabled = false;
+}
+
+// ─── API ───
+async function apiCall(params) {
+  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+  const res = await fetch(url, { redirect:'follow' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+// ─── MAIN HANDLER ───
+let processing = false;
+
+async function handleQR(qrData) {
+  if (processing) return false;
+  const username = getUsername();
+  if (!username) { showErr('err-user', true); $('configPanel').classList.add('show'); return false; }
+  showErr('err-user', false);
+
+  processing = true;
+  showResult('resultLoading');
+
+  try {
+    const timestamp = new Date().toISOString();
+    const check = await apiCall({ action:'check', qr: qrData });
+
+    if (check.status === 'already_scanned') {
+      playBeep('dup');
+      showResult('resultDuplicate', 7000);
+      processing = false;
+      return false;
+    }
+
+    if (check.status === 'confirmed') {
+      await apiCall({ action:'register', qr:qrData, username, timestamp });
+      playBeep('ok');
+
+      $('resultName').textContent   = check.name       || 'Confirmado';
+      $('resultStatus').textContent = check.userStatus || 'Confirmado';
+
+      // Invitee
+      const inv = check.inviteeName && check.inviteeName.trim();
+      $('inviteeText').textContent = inv ? `Invitado: ${inv}` : 'No tiene invitado';
+      $('inviteeRow').style.display = 'flex';
+
+      showResult('resultSuccess', 8000);
+      pushLocal({ qr:qrData, username, timestamp, name:check.name, status:check.userStatus, inviteeName: check.inviteeName || '' });
+      renderLog(); updateCounters();
+      processing = false;
+      return true;
+    }
+
+    if (check.status === 'not_found') {
+      await apiCall({ action:'register', qr:qrData, username, timestamp });
+      playBeep('warn');
+      $('resultQRData').textContent = qrData;
+      currentScanQR   = qrData;
+      currentScanName = '';
+      // Reset guest form
+      $('guestForm').classList.remove('show');
+      showResult('resultNotFound'); // no autohide — user may add guest
+      pushLocal({ qr:qrData, username, timestamp, name:'', status:'No confirmado', inviteeName:'' });
+      renderLog(); updateCounters();
+      processing = false;
+      return true;
+    }
+
+    hideResults();
+    processing = false;
+    return false;
+
+  } catch(err) {
+    hideResults();
+    alert('Error de conexión.\n' + err.message);
+    processing = false;
+    return false;
+  }
+}
+
+function pushLocal(entry) {
+  const d = getLocal(LOCAL_KEY);
+  d.push({ id:Date.now(), ...entry });
+  saveLocal(LOCAL_KEY, d);
+}
+
+// ─── FILE INPUT ───
+$('fileInput').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  showErr('err-qr', false);
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      $('previewImg').src = e.target.result;
+      $('previewWrap').style.display = 'block';
+      const canvas = document.createElement('canvas');
+      const MAX = 1200;
+      let w = img.width, h = img.height;
+      if (w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r);}
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const id = canvas.getContext('2d').getImageData(0,0,w,h);
+      const code = jsQR(id.data,w,h,{inversionAttempts:'dontInvert'});
+      if (code) { showErr('err-qr',false); handleQR(code.data); $('fileInput').value=''; }
+      else showErr('err-qr',true);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+// ─── LIVE CAM ───
+let camStream=null, scanLoop=null;
+async function startCam() {
+  if (!getUsername()) { showErr('err-user',true); $('configPanel').classList.add('show'); return; }
+  showErr('err-user',false); showErr('err-cam',false);
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:1280}}});
+    const v=$('camVideo'); v.srcObject=camStream; await v.play();
+    $('startBtn').style.display='none'; $('stopBtn').style.display='flex';
+    $('camDot').className='dot green'; $('camStatusText').textContent='Escaneando — Apunta al QR';
+    scanLoop=setInterval(scanFrame,300);
+  } catch(e){showErr('err-cam',true);}
+}
+function scanFrame() {
+  if(processing)return;
+  const v=$('camVideo'); if(v.readyState!==v.HAVE_ENOUGH_DATA)return;
+  const c=$('camCanvas'); c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  const d=c.getContext('2d').getImageData(0,0,c.width,c.height);
+  const code=jsQR(d.data,c.width,c.height,{inversionAttempts:'dontInvert'});
+  if(code) handleQR(code.data).then(ok=>{if(ok)stopCam();});
+}
+function stopCam() {
+  clearInterval(scanLoop); scanLoop=null;
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  $('camVideo').srcObject=null;
+  $('startBtn').style.display='flex'; $('stopBtn').style.display='none';
+  $('camDot').className='dot gray'; $('camStatusText').textContent='Cámara inactiva';
+}
+
+// ─── COUNTERS ───
+function updateCounters() {
+  const scans  = getLocal(LOCAL_KEY);
+  const guests = getLocal(GUEST_KEY);
+  const userCount  = scans.length;
+  const guestCount = guests.reduce((s,g) => s + (parseInt(g.count)||0), 0);
+  const total = userCount + guestCount;
+
+  // Counter card
+  $('counterTotal').textContent = total;
+  $('cbUsers').textContent  = userCount;
+  $('cbGuests').textContent = guestCount;
+  const up = total ? Math.round(userCount/total*100)  : 0;
+  const gp = total ? Math.round(guestCount/total*100) : 0;
+  $('cbUsersPct').textContent  = total ? `${up}%` : '—';
+  $('cbGuestsPct').textContent = total ? `${gp}%` : '—';
+
+  // Sticky bar
+  $('sTotal').textContent      = total;
+  $('sUsers').textContent      = userCount;
+  $('sGuests').textContent     = guestCount;
+  $('sUsersPct').textContent   = total ? `${up}% usuarios` : '— usuarios';
+  $('sGuestsPct').textContent  = total ? `${gp}% invitados` : '— invitados';
+  $('stickyBar').classList.toggle('visible', total > 0);
+}
+
+// ─── LOG TOGGLE ───
+let logOpen = false;
+function toggleLog() {
+  logOpen = !logOpen;
+  $('logListWrap').classList.toggle('open', logOpen);
+  $('logToggleBtn').textContent = logOpen ? 'Ocultar ▴' : 'Ver detalles ▾';
+}
+
+// ─── RENDER LOG ───
+function renderLog() {
+  const data = getLocal(LOCAL_KEY);
+  const list = $('logList');
+  if (!data.length) {
+    list.innerHTML = '<div class="empty"><div class="ei">📭</div>Sin ingresos aún.</div>';
+    return;
+  }
+  list.innerHTML = [...data].reverse().map(s => {
+    const d  = new Date(s.timestamp);
+    const ds = d.toLocaleDateString('es',{day:'2-digit',month:'short'});
+    const ts = d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const ini = s.username.replace('@','').substring(0,2).toUpperCase();
+    const confirmed = s.status && s.status !== 'No confirmado';
+    const inv = s.inviteeName && s.inviteeName.trim();
+    return `<div class="scan-item">
+      <div class="si-top">
+        <div class="si-user"><div class="avatar">${ini}</div><span class="si-username">${esc(s.username)}</span></div>
+        <span class="si-time">${ds} · ${ts}</span>
+      </div>
+      ${s.name ? `<div class="si-name">${esc(s.name)}</div>` : ''}
+      ${s.name ? `<span class="si-status ${confirmed?'ok':'no'}">${esc(s.status||'No confirmado')}</span>` : ''}
+      <div class="si-invitee">👤 Invitado: <span>${inv ? esc(inv) : 'No tiene invitado'}</span></div>
+      <div class="si-data">${esc(s.qr)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── CSV ───
+function exportCSV() {
+  const scans  = getLocal(LOCAL_KEY);
+  const guests = getLocal(GUEST_KEY);
+  if (!scans.length && !guests.length) { alert('No hay datos para exportar.'); return; }
+
+  let rows = [['Tipo','Timestamp','Fecha','Hora','Operador','Nombre','Status','Invitado QR','QR / Info']];
+  scans.forEach(s => {
+    const d = new Date(s.timestamp);
+    rows.push(['Usuario', s.timestamp, d.toLocaleDateString('es'), d.toLocaleTimeString('es'),
+      s.username, s.name||'', s.status||'', s.inviteeName||'', s.qr]);
+  });
+  guests.forEach(g => {
+    const d = new Date(g.timestamp);
+    rows.push(['Invitado', g.timestamp, d.toLocaleDateString('es'), d.toLocaleTimeString('es'),
+      g.username, g.guestName||'', `+${g.count}`, g.hostName||'', g.contact||'']);
+  });
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `fanfest_acceso_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+// ─── INIT ───
+renderLog();
+updateCounters();
+
+// Re-acquire wake lock if tab regains visibility
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && $('toggleWakeLock').checked && !wakeLock) {
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+  }
+});
+</script>
+</body>
+</html>
